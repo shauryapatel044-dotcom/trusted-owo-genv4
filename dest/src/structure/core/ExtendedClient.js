@@ -20,16 +20,45 @@ export class ExtendedClient extends Client {
     };
     checkAccount = (token) => {
         return new Promise((resolve, reject) => {
-            this.once("ready", () => resolve(this.user?.id));
+            const timer = setTimeout(() => {
+                this.off("debug", onDebug);
+                this.off("error", onLoginError);
+                reject(new Error("Login timed out after 35 seconds. Your server may be having difficulty reaching Discord's Gateway or Discord is requesting human verification."));
+            }, 35000);
+            const onDebug = (info) => {
+                if (typeof info === "string") {
+                    if (info.includes("Connecting to Discord Gateway") || info.includes("send packet '{\"op\":2") || info.includes("READY") || info.includes("all its guilds")) {
+                        logger.info(`[Discord] ${info.slice(0, 100)}`);
+                    }
+                }
+            };
+            this.on("debug", onDebug);
+            const onLoginError = (error) => {
+                clearTimeout(timer);
+                this.off("debug", onDebug);
+                this.off("error", onLoginError);
+                reject(error);
+            };
+            this.once("error", onLoginError);
+            this.once("ready", () => {
+                clearTimeout(timer);
+                this.off("debug", onDebug);
+                this.off("error", onLoginError);
+                logger.info(`[INFO] Verified account: ${this.user?.tag || this.user?.username || this.user?.id}`);
+                resolve(this.user?.id);
+            });
             try {
                 if (token) {
-                    this.login(token);
+                    this.login(token).catch(onLoginError);
                 }
                 else {
-                    this.QRLogin();
+                    this.QRLogin().catch(onLoginError);
                 }
             }
             catch (error) {
+                clearTimeout(timer);
+                this.off("debug", onDebug);
+                this.off("error", onLoginError);
                 reject(error);
             }
         });

@@ -1,3 +1,8 @@
+import dns from "node:dns";
+try {
+    dns.setDefaultResultOrder("ipv4first");
+}
+catch { }
 import { UpdateFeature } from "./src/services/UpdateService.js";
 import { BaseAgent } from "./src/structure/BaseAgent.js";
 import { ExtendedClient } from "./src/structure/core/ExtendedClient.js";
