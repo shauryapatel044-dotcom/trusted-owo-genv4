@@ -38,7 +38,11 @@ export class YesCaptchaSolver {
             body: imageData.toString("base64"),
         });
         if (data.errorId !== 0) {
-            throw new Error(`[YesCaptcha] Image-to-text task failed: ${data.errorDescription}`);
+            let desc = data.errorDescription || "Unknown error";
+            if (desc.includes("帐户密钥错误") || data.errorCode === "ERROR_KEY_DOES_NOT_EXIST") {
+                desc = `Invalid Client Key (ERROR_KEY_DOES_NOT_EXIST): Please verify your YesCaptcha clientKey. ${desc}`;
+            }
+            throw new Error(`[YesCaptcha] Image-to-text task failed: ${desc}`);
         }
         return data.solution.text;
     }

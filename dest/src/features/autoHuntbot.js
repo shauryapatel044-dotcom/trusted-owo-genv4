@@ -6,18 +6,25 @@ import { t } from "../utils/locales.js";
 const solvePassword = async (attachmentUrl, options) => {
     if ("provider" in options && "apiKey" in options) {
         const { provider, apiKey } = options;
-        const solver = new CaptchaService({
-            provider,
-            apiKey
-        });
-        const result = await solver.solveImageCaptcha(attachmentUrl);
-        const isValidResult = /^\w{5}$/.test(result);
-        if (!isValidResult) {
-            logger.warn(t("features.autoHuntbot.errors.invalidCaptchaResult", { result }));
+        try {
+            const solver = new CaptchaService({
+                provider,
+                apiKey
+            });
+            const result = await solver.solveImageCaptcha(attachmentUrl);
+            const isValidResult = /^\w{5}$/.test(result);
+            if (!isValidResult) {
+                logger.warn(t("features.autoHuntbot.errors.invalidCaptchaResult", { result }));
+                return undefined;
+            }
+            logger.data(t("captcha.solutionFound", { solution: result }));
+            return result;
+        }
+        catch (err) {
+            const msg = err?.message || String(err);
+            logger.error(`[Captcha] Solver failed: ${msg}`);
             return undefined;
         }
-        logger.data(t("captcha.solutionFound", { solution: result }));
-        return result;
     }
     const { agent } = options;
     const installedApps = await agent.client.authorizedApplications();
@@ -152,6 +159,11 @@ export default Schematic.registerFeature({
                 provider: agent.config.captchaAPI,
                 apiKey: agent.config.apiKey
             });
+            // If primary provider failed (e.g. invalid key or zero balance), try fallback to Mirai
+            if (!password) {
+                logger.info("[AutoHuntbot] Primary captcha solver failed. Attempting fallback to Mirai slash command solver...");
+                password = await solvePassword(attachmentUrl, options);
+            }
         }
         else {
             if (!agent.config.useAdotfAPI) {
@@ -159,8 +171,10 @@ export default Schematic.registerFeature({
             }
             password = await solvePassword(attachmentUrl, options);
         }
-        if (!password)
-            return;
+        if (!password) {
+            logger.warn("[AutoHuntbot] Could not solve captcha password. OwO will reset password in 10 minutes. Rescheduling...");
+            return 10 * 60 * 1000;
+        }
         const resultMsg = await agent.awaitResponse({
             trigger: () => agent.send(`huntbot 24h ${password}`),
             filter: m => m.author.id === agent.owoID
