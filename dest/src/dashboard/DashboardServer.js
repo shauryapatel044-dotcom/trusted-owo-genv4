@@ -195,8 +195,10 @@ export class DashboardServer {
                             sanitizedConfig.wayNotify = sanitizedConfig.wayNotify.filter((w) => w !== "music");
                         }
                         // Gem Tier default
+                        if (sanitizedConfig.autoGem === undefined)
+                            sanitizedConfig.autoGem = 1;
                         if (sanitizedConfig.autoGem && (!sanitizedConfig.gemTier || sanitizedConfig.gemTier.length === 0)) {
-                            sanitizedConfig.gemTier = ["common", "uncommon", "rare", "epic", "mythical"];
+                            sanitizedConfig.gemTier = ["common", "uncommon", "rare", "epic", "mythical", "legendary", "fabled"];
                         }
                         // Array feature defaults
                         sanitizedConfig.autoQuote = Array.isArray(sanitizedConfig.autoQuote) && sanitizedConfig.autoQuote.length > 0 ? sanitizedConfig.autoQuote : ["owo"];

@@ -825,9 +825,9 @@
             <div class="glass-card">
                 <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
                     <div>
-                        <h2 style="font-size: 16px; font-weight: 800; color: white;">⚡ Multi-Token Farm Controller (3 Accounts)</h2>
+                        <h2 style="font-size: 16px; font-weight: 800; color: white;">⚡ Multi-Token Farm Controller (Up to 10 Accounts)</h2>
                         <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
-                            Enter up to 3 Discord User Tokens to run concurrently. Settings below are applied to all accounts automatically.
+                            Enter up to 10 Discord User Tokens to run concurrently. Settings below are applied to all accounts automatically.
                         </p>
                     </div>
                     <div style="display: flex; gap: 8px;">
@@ -862,6 +862,69 @@
                         </div>
                         <input id="token-2" type="password" class="input-field" placeholder="Paste Discord Token 3..." />
                         <div id="verified-2" style="font-size: 11px; margin-top: 6px; color: var(--text-dim);">Optional</div>
+                    </div>
+
+                    <div class="token-card">
+                        <div class="token-header">
+                            <span>Account 4 <span style="color: var(--text-dim);">(Optional)</span></span>
+                            <button class="toggle-btn" onclick="toggleTokenVis(3)">Show/Hide</button>
+                        </div>
+                        <input id="token-3" type="password" class="input-field" placeholder="Paste Discord Token 4..." />
+                        <div id="verified-3" style="font-size: 11px; margin-top: 6px; color: var(--text-dim);">Optional</div>
+                    </div>
+
+                    <div class="token-card">
+                        <div class="token-header">
+                            <span>Account 5 <span style="color: var(--text-dim);">(Optional)</span></span>
+                            <button class="toggle-btn" onclick="toggleTokenVis(4)">Show/Hide</button>
+                        </div>
+                        <input id="token-4" type="password" class="input-field" placeholder="Paste Discord Token 5..." />
+                        <div id="verified-4" style="font-size: 11px; margin-top: 6px; color: var(--text-dim);">Optional</div>
+                    </div>
+
+                    <div class="token-card">
+                        <div class="token-header">
+                            <span>Account 6 <span style="color: var(--text-dim);">(Optional)</span></span>
+                            <button class="toggle-btn" onclick="toggleTokenVis(5)">Show/Hide</button>
+                        </div>
+                        <input id="token-5" type="password" class="input-field" placeholder="Paste Discord Token 6..." />
+                        <div id="verified-5" style="font-size: 11px; margin-top: 6px; color: var(--text-dim);">Optional</div>
+                    </div>
+
+                    <div class="token-card">
+                        <div class="token-header">
+                            <span>Account 7 <span style="color: var(--text-dim);">(Optional)</span></span>
+                            <button class="toggle-btn" onclick="toggleTokenVis(6)">Show/Hide</button>
+                        </div>
+                        <input id="token-6" type="password" class="input-field" placeholder="Paste Discord Token 7..." />
+                        <div id="verified-6" style="font-size: 11px; margin-top: 6px; color: var(--text-dim);">Optional</div>
+                    </div>
+
+                    <div class="token-card">
+                        <div class="token-header">
+                            <span>Account 8 <span style="color: var(--text-dim);">(Optional)</span></span>
+                            <button class="toggle-btn" onclick="toggleTokenVis(7)">Show/Hide</button>
+                        </div>
+                        <input id="token-7" type="password" class="input-field" placeholder="Paste Discord Token 8..." />
+                        <div id="verified-7" style="font-size: 11px; margin-top: 6px; color: var(--text-dim);">Optional</div>
+                    </div>
+
+                    <div class="token-card">
+                        <div class="token-header">
+                            <span>Account 9 <span style="color: var(--text-dim);">(Optional)</span></span>
+                            <button class="toggle-btn" onclick="toggleTokenVis(8)">Show/Hide</button>
+                        </div>
+                        <input id="token-8" type="password" class="input-field" placeholder="Paste Discord Token 9..." />
+                        <div id="verified-8" style="font-size: 11px; margin-top: 6px; color: var(--text-dim);">Optional</div>
+                    </div>
+
+                    <div class="token-card">
+                        <div class="token-header">
+                            <span>Account 10 <span style="color: var(--text-dim);">(Optional)</span></span>
+                            <button class="toggle-btn" onclick="toggleTokenVis(9)">Show/Hide</button>
+                        </div>
+                        <input id="token-9" type="password" class="input-field" placeholder="Paste Discord Token 10..." />
+                        <div id="verified-9" style="font-size: 11px; margin-top: 6px; color: var(--text-dim);">Optional</div>
                     </div>
                 </div>
 
@@ -1019,6 +1082,14 @@
                             <span class="switch-desc">Sells inventory items for cowoncy</span>
                         </div>
                         <label class="switch"><input type="checkbox" id="cfg-autoSell"><span class="slider"></span></label>
+                    </div>
+
+                    <div class="switch-container" onclick="toggleSwitch('autoGem')">
+                        <div class="switch-info">
+                            <span class="switch-title">💎 Auto-Gems (Best Tiers)</span>
+                            <span class="switch-desc">Auto executes oinv & equips best Diamond, Round, Heart gems</span>
+                        </div>
+                        <label class="switch"><input type="checkbox" id="cfg-autoGem" checked><span class="slider"></span></label>
                     </div>
                 </div>
 
@@ -1185,7 +1256,10 @@
             let cardsHtml = '';
             let tableHtml = '';
 
-            for (let i = 0; i < 3; i++) {
+            const activeCount = state.accounts.length;
+            const totalToDisplay = Math.max(activeCount, 3);
+
+            for (let i = 0; i < totalToDisplay; i++) {
                 const acc = state.accounts[i];
                 const isOnline = !!acc;
                 const status = acc ? acc.status : 'standby';
@@ -1231,7 +1305,7 @@
                             </div>
                         ` : `
                             <div style="padding: 20px 0; text-align: center; color: var(--text-dim); font-size: 12px;">
-                                Add Token ${i + 1} to run 3 accounts simultaneously
+                                Add Token ${i + 1} to run multiple accounts concurrently
                             </div>
                         `}
                     </div>
@@ -1264,11 +1338,21 @@
             if (tableBody) tableBody.innerHTML = tableHtml || '<tr><td colspan="9" style="text-align: center; color: var(--text-dim); padding: 30px;">No active accounts. Enter tokens above and click Start!</td></tr>';
         }
 
+        // Helper: Get all non-empty tokens entered (up to 10)
+        function getEnteredTokens() {
+            const tokens = [];
+            for (let i = 0; i < 10; i++) {
+                const val = document.getElementById('token-' + i)?.value.trim();
+                if (val) tokens.push(val);
+            }
+            return tokens;
+        }
+
         // Load Saved Configuration
         function loadSavedTokens() {
             if (!state.saved) return;
             const toks = state.saved.tokens || [];
-            for (let i = 0; i < 3; i++) {
+            for (let i = 0; i < 10; i++) {
                 const el = document.getElementById('token-' + i);
                 if (el && toks[i]) {
                     el.value = toks[i];
@@ -1282,7 +1366,7 @@
 
         // Populate Config Form Inputs
         function populateConfigFields(cfg) {
-            ['autoHuntbot', 'autoBattle', 'autoDaily', 'autoSleep', 'autoCookie', 'autoClover', 'autoLootbox', 'autoSell'].forEach(key => {
+            ['autoHuntbot', 'autoBattle', 'autoDaily', 'autoSleep', 'autoCookie', 'autoClover', 'autoLootbox', 'autoSell', 'autoGem'].forEach(key => {
                 const el = document.getElementById('cfg-' + key);
                 if (el && cfg[key] !== undefined) {
                     el.checked = !!cfg[key];
@@ -1306,11 +1390,7 @@
         // Verify Tokens
         async function verifyTokens() {
             const statusEl = document.getElementById('verify-status');
-            const tokens = [
-                document.getElementById('token-0')?.value.trim(),
-                document.getElementById('token-1')?.value.trim(),
-                document.getElementById('token-2')?.value.trim(),
-            ].filter(Boolean);
+            const tokens = getEnteredTokens();
 
             if (tokens.length === 0) {
                 statusEl.textContent = '⚠️ Please enter at least Token 1.';
@@ -1318,7 +1398,7 @@
                 return;
             }
 
-            statusEl.textContent = '⏳ Connecting to Discord Gateway...';
+            statusEl.textContent = `⏳ Connecting to Discord Gateway for ${tokens.length} account(s)...`;
             statusEl.style.color = 'var(--amber)';
 
             try {
@@ -1355,11 +1435,7 @@
 
         // Launch Farm
         async function launchFarm() {
-            const tokens = [
-                document.getElementById('token-0')?.value.trim(),
-                document.getElementById('token-1')?.value.trim(),
-                document.getElementById('token-2')?.value.trim(),
-            ].filter(Boolean);
+            const tokens = getEnteredTokens();
 
             if (tokens.length === 0) {
                 alert('Please enter at least 1 Discord token.');
@@ -1402,6 +1478,8 @@
                     autoClover: document.getElementById('cfg-autoClover')?.checked ?? true,
                     autoLootbox: document.getElementById('cfg-autoLootbox')?.checked ?? true,
                     autoSell: document.getElementById('cfg-autoSell')?.checked ?? false,
+                    autoGem: document.getElementById('cfg-autoGem')?.checked ? 1 : 0,
+                    gemTier: ['common', 'uncommon', 'rare', 'epic', 'mythical', 'legendary', 'fabled'],
                     adminID: adminID || undefined,
                     captchaAPI: (captchaAPI && apiKey) ? captchaAPI : undefined,
                     apiKey: (captchaAPI && apiKey) ? apiKey : undefined,
@@ -1410,13 +1488,11 @@
                     autoPray: ['pray'],
                     autoQuote: ['owo'],
                     autoRPP: ['run', 'pup', 'piku'],
-                    autoGem: 0,
-                    gemTier: ['common', 'uncommon', 'rare', 'epic', 'mythical'],
                     wayNotify
                 }
             };
 
-            showToast('🚀 Launching Multi-Token Farming Engine...');
+            showToast(`🚀 Launching Multi-Token Engine with ${tokens.length} Accounts...`);
             try {
                 const res = await fetch('/api/setup/start', {
                     method: 'POST',
@@ -1460,6 +1536,8 @@
                 autoClover: document.getElementById('cfg-autoClover')?.checked,
                 autoLootbox: document.getElementById('cfg-autoLootbox')?.checked,
                 autoSell: document.getElementById('cfg-autoSell')?.checked,
+                autoGem: document.getElementById('cfg-autoGem')?.checked ? 1 : 0,
+                gemTier: ['common', 'uncommon', 'rare', 'epic', 'mythical', 'legendary', 'fabled'],
                 adminID: adminID || undefined,
                 captchaAPI: (captchaAPI && apiKey) ? captchaAPI : undefined,
                 apiKey: (captchaAPI && apiKey) ? apiKey : undefined,
@@ -1474,7 +1552,7 @@
                     body: JSON.stringify(newCfg)
                 });
                 if (res.ok) {
-                    showToast('💾 Saved & Applied to All 3 Accounts!');
+                    showToast('💾 Saved & Applied to All Accounts!');
                 }
             } catch (e) {
                 showToast('❌ Error saving configuration.');
@@ -1580,7 +1658,7 @@
                 populateConfigFields(state.saved.config);
             }
             if (state.saved && state.saved.tokens) {
-                for (let i = 0; i < 3; i++) {
+                for (let i = 0; i < 10; i++) {
                     const el = document.getElementById('token-' + i);
                     if (el && state.saved.tokens[i]) el.value = state.saved.tokens[i];
                 }

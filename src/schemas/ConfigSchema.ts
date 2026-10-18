@@ -34,7 +34,7 @@ export const ConfigSchema = z.object({
     ]).optional(),
     useAdotfAPI: z.boolean().default(true).optional(),
     autoPray: z.array(z.string()).default(["pray"]),
-    autoGem: z.union([z.literal(0), z.literal(-1), z.literal(1)]).default(0),
+    autoGem: z.union([z.literal(0), z.literal(-1), z.literal(1)]).default(1),
     gemTier: z.array(z.enum([
         "common",
         "uncommon",
@@ -49,6 +49,8 @@ export const ConfigSchema = z.object({
         "rare",
         "epic",
         "mythical",
+        "legendary",
+        "fabled"
     ]).optional(),
     useSpecialGem: z.boolean().default(false).optional(),
     autoLootbox: z.boolean().default(true).optional(),

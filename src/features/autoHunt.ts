@@ -29,14 +29,20 @@ const useGems = async (params: FeatureFnParams, huntMsg: Message) => {
     const invMsg = await agent.awaitResponse({
         trigger: () => agent.send("inv"),
         filter: (m) => m.author.id === agent.owoID
-            && m.content.includes(m.guild?.members.me?.displayName!)
-            && m.content.includes("Inventory"),
+            && Boolean(
+                m.content.toLowerCase().includes("inventory")
+                || (m.embeds.length > 0 && (
+                    m.embeds[0].author?.name?.toLowerCase().includes("inventory")
+                    || m.embeds[0].description?.toLowerCase().includes("inventory")
+                ))
+            ),
         expectResponse: true,
     });
 
     if (!invMsg) return;
 
-    const inventory = invMsg.content.split("`");
+    const rawText = invMsg.content + " " + (invMsg.embeds[0]?.description || "");
+    const inventory = rawText.split("`");
 
     if (agent.config.autoFabledLootbox && inventory.includes("049")) {
         await agent.send("lb fabled");
@@ -45,19 +51,21 @@ const useGems = async (params: FeatureFnParams, huntMsg: Message) => {
     if (agent.config.autoLootbox && inventory.includes("050")) {
         await agent.send("lb all");
 
-        // After opening, re-run the hunt to get an accurate state.
         logger.debug("Lootboxes opened, re-running useGems logic to check inventory again.");
-        await agent.client.sleep(ranInt(5000, 10000)); // Wait a bit for the lootbox to open
+        (agent as any).emptyGemCooldown = 0;
+        await agent.client.sleep(ranInt(5000, 10000));
         await useGems(params, huntMsg);
         return;
     }
 
-    const usableGemsSet = new Set(agent.config.gemTier?.map((tier) => GEM_TIERS[tier]).flat());
+    const tiers = (agent.config.gemTier && agent.config.gemTier.length > 0
+        ? agent.config.gemTier
+        : ["common", "uncommon", "rare", "epic", "mythical", "legendary", "fabled"]) as (keyof typeof GEM_TIERS)[];
+    const usableGemsSet = new Set(tiers.map((tier) => GEM_TIERS[tier]).flat());
 
     const filterAndMapGems = (regex: RegExp) => {
         return inventory.reduce((acc: number[], item) => {
             const numItem = Number(item);
-            // Test regex first (it's fast) then check the Set.
             if (regex.test(item) && usableGemsSet.has(numItem)) {
                 acc.push(numItem);
             }
@@ -72,33 +80,42 @@ const useGems = async (params: FeatureFnParams, huntMsg: Message) => {
 
     const totalGems = agent.gem1Cache.length + agent.gem2Cache.length + agent.gem3Cache.length + agent.starCache.length;
     if (totalGems === 0) {
-        logger.info(t("features.autoHunt.noGems"));
-        agent.config.autoGem = 0; // Disable feature if no gems are left
+        logger.info(t("features.autoHunt.noGems") + " (will re-check inventory in 5 mins)");
+        (agent as any).emptyGemCooldown = Date.now() + 5 * 60 * 1000;
         return;
     }
 
+    (agent as any).emptyGemCooldown = 0;
     logger.info(t("features.autoHunt.gemsFound", { count: totalGems }));
 
-    const gemsToUse: number[] = []
+    const gemsToUse: number[] = [];
 
+    // 1. Hunting Gems (Diamond Shape: IDs 51-57)
     if (!huntMsg.content.includes("gem1") && agent.gem1Cache.length > 0) {
-        gemsToUse.push(agent.config.autoGem > 0 ? Math.max(...agent.gem1Cache) : Math.min(...agent.gem1Cache));
+        const bestHunting = Math.max(...agent.gem1Cache);
+        gemsToUse.push(bestHunting);
     }
+    // 2. Empowering Gems (Round Shape: IDs 65-71)
     if (!huntMsg.content.includes("gem3") && agent.gem2Cache.length > 0) {
-        gemsToUse.push(agent.config.autoGem > 0 ? Math.max(...agent.gem2Cache) : Math.min(...agent.gem2Cache));
+        const bestEmpowering = Math.max(...agent.gem2Cache);
+        gemsToUse.push(bestEmpowering);
     }
+    // 3. Lucky Gems (Heart Shape: IDs 72-78)
     if (!huntMsg.content.includes("gem4") && agent.gem3Cache.length > 0) {
-        gemsToUse.push(agent.config.autoGem > 0 ? Math.max(...agent.gem3Cache) : Math.min(...agent.gem3Cache));
+        const bestLucky = Math.max(...agent.gem3Cache);
+        gemsToUse.push(bestLucky);
     }
+    // 4. Special Gems (Star Shape: IDs 79-85)
     if (agent.config.useSpecialGem && !huntMsg.content.includes("star") && agent.starCache.length > 0) {
-        gemsToUse.push(agent.config.autoGem > 0 ? Math.max(...agent.starCache) : Math.min(...agent.starCache));
+        const bestStar = Math.max(...agent.starCache);
+        gemsToUse.push(bestStar);
     }
 
     if (gemsToUse.length === 0) {
-        logger.info(t("features.autoHunt.noGems"));
         return;
     }
 
+    logger.info(`[Auto-Gem] Equipping Best Gems: ${gemsToUse.map(g => '#' + g).join(", ")}`);
     await agent.send(`use ${gemsToUse.join(" ")}`);
 }
 
@@ -117,11 +134,16 @@ export default Schematic.registerFeature({
 
         if (!huntMsg || !agent.config.autoGem) return;
 
-        const gem1Needed = !huntMsg.content.includes("gem1") && (!agent.gem1Cache || agent.gem1Cache.length > 0);
-        const gem2Needed = !huntMsg.content.includes("gem3") && (!agent.gem2Cache || agent.gem2Cache.length > 0);
-        const gem3Needed = !huntMsg.content.includes("gem4") && (!agent.gem3Cache || agent.gem3Cache.length > 0);
-        const starNeeded = Boolean(agent.config.useSpecialGem && !huntMsg.content.includes("star") && (!agent.starCache || agent.starCache.length > 0));
+        const cooldown = (agent as any).emptyGemCooldown || 0;
+        if (Date.now() < cooldown) return;
 
-        if (gem1Needed || gem2Needed || gem3Needed || starNeeded) await useGems({ agent, t, locale }, huntMsg);
+        const gem1Needed = !huntMsg.content.includes("gem1");
+        const gem2Needed = !huntMsg.content.includes("gem3");
+        const gem3Needed = !huntMsg.content.includes("gem4");
+        const starNeeded = Boolean(agent.config.useSpecialGem && !huntMsg.content.includes("star"));
+
+        if (gem1Needed || gem2Needed || gem3Needed || starNeeded) {
+            await useGems({ agent, t, locale }, huntMsg);
+        }
     }
 })

@@ -209,8 +209,9 @@ export class DashboardServer {
                         }
 
                         // Gem Tier default
+                        if (sanitizedConfig.autoGem === undefined) sanitizedConfig.autoGem = 1;
                         if (sanitizedConfig.autoGem && (!sanitizedConfig.gemTier || sanitizedConfig.gemTier.length === 0)) {
-                            sanitizedConfig.gemTier = ["common", "uncommon", "rare", "epic", "mythical"];
+                            sanitizedConfig.gemTier = ["common", "uncommon", "rare", "epic", "mythical", "legendary", "fabled"];
                         }
 
                         // Array feature defaults
