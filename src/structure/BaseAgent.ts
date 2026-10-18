@@ -24,6 +24,7 @@ import { ExtendedClient } from "./core/ExtendedClient.js";
 import { CooldownManager } from "./core/CooldownManager.js";
 import { fileURLToPath } from "node:url";
 import { CriticalEventHandler } from "@/handlers/CriticalEventHandler.js";
+import { dashboardState } from "@/dashboard/DashboardState.js";
 
 export class BaseAgent {
     public readonly rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -384,6 +385,10 @@ export class BaseAgent {
         logger.debug("BaseAgent initialized successfully.");
         logger.info(t("agent.messages.loggedIn", { username: client.user.username }));
 
+        // Register to Red Dashboard controller
+        dashboardState.registerAccount(client, agent, config);
+
         agent.farmLoop();
+        return agent;
     }
 }

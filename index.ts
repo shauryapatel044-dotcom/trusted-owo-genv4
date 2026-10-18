@@ -17,6 +17,8 @@ import { Locale } from "@/utils/locales.js";
 process.title = `Advanced Discord OwO Tool Farm v${packageJSON.version} - Copyright 2025 © Elysia x Kyou Izumi`;
 console.clear();
 
+import { DashboardServer } from "@/dashboard/DashboardServer.js";
+
 const updateFeature = new UpdateFeature();
 const client = new ExtendedClient();
 
@@ -67,6 +69,15 @@ if (!argv._.length) {
         await client.sleep(1000); // Wait for update to complete
     }
 
-    const { config } = await InquirerUI.prompt(client);
-    await BaseAgent.initialize(client, config);
+    // Start Red Theme Professional Dashboard Server
+    const dashboardServer = new DashboardServer();
+    const port = await dashboardServer.start();
+    logger.info(`🔴 Red Theme Professional Dashboard online at http://localhost:${port}`);
+
+    const { accounts } = await InquirerUI.prompt();
+    logger.info(`⚡ Starting concurrent farming loop for ${accounts.length} account(s)...`);
+
+    for (const acc of accounts) {
+        await BaseAgent.initialize(acc.client, acc.config);
+    }
 }

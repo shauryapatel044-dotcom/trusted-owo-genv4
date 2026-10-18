@@ -75,12 +75,31 @@ class WinstonLogger {
         this.logger.level = level;
         this.logger.transports.find(t => t instanceof winston.transports.Console).level = level;
     }
+    listeners = [];
+    addListener(listener) {
+        this.listeners.push(listener);
+    }
+    removeListener(listener) {
+        this.listeners = this.listeners.filter(l => l !== listener);
+    }
     log(level, message) {
+        const text = message instanceof Error ? (message.stack || message.message) : message;
         if (message instanceof Error) {
             this.logger.log(level, message.message, { stack: message.stack });
         }
         else {
             this.logger.log(level, message);
+        }
+        const entry = {
+            level,
+            message: text,
+            timestamp: new Date().toISOString()
+        };
+        for (const listener of this.listeners) {
+            try {
+                listener(entry);
+            }
+            catch { }
         }
     }
     alert(message) {

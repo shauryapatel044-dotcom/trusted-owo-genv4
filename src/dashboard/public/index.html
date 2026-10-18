@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trusted OwO Gen v4 | Red Enterprise Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            900: '#07070a',
+                            800: '#0d0d12',
+                            700: '#14141c',
+                            600: '#1c1c28',
+                        },
+                        crimson: {
+                            500: '#ff2a4b',
+                            600: '#ef4444',
+                            700: '#dc2626',
+                            800: '#991b1b',
+                            900: '#7f1d1d',
+                        }
+                    },
+                    boxShadow: {
+                        'neon-red': '0 0 25px -5px rgba(239, 68, 68, 0.4)',
+                        'neon-card': '0 4px 20px -2px rgba(220, 38, 38, 0.15)',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- React & Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Framer Motion -->
+    <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #07070a;
+            color: #f3f4f6;
+            overflow-x: hidden;
+        }
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0d0d12;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2b1216;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #ef4444;
+        }
+        .glass-panel {
+            background: rgba(18, 18, 25, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+        .glass-panel:hover {
+            border-color: rgba(239, 68, 68, 0.35);
+        }
+        .glow-dot {
+            box-shadow: 0 0 10px #ef4444;
+        }
+    </style>
+</head>
+<body class="bg-dark-900 text-gray-100 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        const { motion, AnimatePresence } = window.Motion || window.framerMotion || {
+            motion: {
+                div: (props) => <div {...props}>{props.children}</div>,
+                button: (props) => <button {...props}>{props.children}</button>,
+                span: (props) => <span {...props}>{props.children}</span>,
+            },
+            AnimatePresence: ({ children }) => <>{children}</>
+        };
+
+        function DashboardApp() {
+            const [activeTab, setActiveTab] = useState("overview");
+            const [accounts, setAccounts] = useState([]);
+            const [stats, setStats] = useState({
+                totalAccounts: 0,
+                activeCount: 0,
+                totalCommands: 0,
+                totalCaptchaSolved: 0,
+                totalCaptchaFailed: 0,
+                globalUptime: 0
+            });
+            const [logs, setLogs] = useState([]);
+            const [config, setConfig] = useState({});
+            const [logFilter, setLogFilter] = useState("ALL");
+            const [accountFilter, setAccountFilter] = useState("ALL");
+            const [autoScroll, setAutoScroll] = useState(true);
+            const [saveStatus, setSaveStatus] = useState("");
+            const terminalEndRef = useRef(null);
+
+            // Fetch initial status
+            const fetchData = async () => {
+                try {
+                    const res = await fetch("/api/status");
+                    const data = await res.json();
+                    if (data.accounts) setAccounts(data.accounts);
+                    if (data.stats) setStats(data.stats);
+                    if (data.config) setConfig(data.config);
+                } catch (e) {
+                    console.error("Fetch status error:", e);
+                }
+            };
+
+            useEffect(() => {
+                fetchData();
+                const interval = setInterval(fetchData, 4000);
+
+                // SSE for real-time live events
+                const evtSource = new EventSource("/api/events");
+                evtSource.onmessage = (event) => {
+                    try {
+                        const parsed = JSON.parse(event.data);
+                        if (parsed.type === "init" || parsed.type === "status") {
+                            const data = parsed.data || parsed;
+                            if (data.accounts) setAccounts(data.accounts);
+                            if (data.stats) setStats(data.stats);
+                            if (data.config) setConfig(data.config);
+                        } else if (parsed.type === "log") {
+                            setLogs((prev) => [...prev.slice(-300), parsed.data]);
+                        }
+                    } catch (err) {
+                        console.error("SSE parse error:", err);
+                    }
+                };
+
+                return () => {
+                    clearInterval(interval);
+                    evtSource.close();
+                };
+            }, []);
+
+            // Auto-scroll logs
+            useEffect(() => {
+                if (autoScroll && terminalEndRef.current) {
+                    terminalEndRef.current.scrollIntoView({ behavior: "smooth" });
+                }
+            }, [logs, autoScroll]);
+
+            const handlePause = async (id) => {
+                await fetch(`/api/accounts/pause?id=${id || "all"}`, { method: "POST" });
+                fetchData();
+            };
+
+            const handleResume = async (id) => {
+                await fetch(`/api/accounts/resume?id=${id || "all"}`, { method: "POST" });
+                fetchData();
+            };
+
+            const handleSaveConfig = async (e) => {
+                if (e) e.preventDefault();
+                setSaveStatus("Saving...");
+                try {
+                    const res = await fetch("/api/config", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(config)
+                    });
+                    if (res.ok) {
+                        setSaveStatus("Saved to All 3 Accounts!");
+                        setTimeout(() => setSaveStatus(""), 3000);
+                    } else {
+                        setSaveStatus("Save failed!");
+                    }
+                } catch (err) {
+                    setSaveStatus("Error saving!");
+                }
+            };
+
+            const formatUptime = (seconds) => {
+                const h = Math.floor(seconds / 3600);
+                const m = Math.floor((seconds % 3600) / 60);
+                const s = seconds % 60;
+                return `${h}h ${m}m ${s}s`;
+            };
+
+            const filteredLogs = logs.filter(l => {
+                if (logFilter !== "ALL" && l.level.toUpperCase() !== logFilter) return false;
+                if (accountFilter !== "ALL" && !l.message.toLowerCase().includes(accountFilter.toLowerCase())) return false;
+                return true;
+            });
+
+            return (
+                <div className="flex flex-col min-h-screen">
+                    {/* Top Navigation Bar */}
+                    <header className="border-b border-crimson-900/40 bg-dark-800/80 backdrop-blur-md sticky top-0 z-50">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-crimson-700 to-rose-500 flex items-center justify-center shadow-neon-red">
+                                    <span className="text-xl font-extrabold text-white">⚡</span>
+                                </div>
+                                <div>
+                                    <h1 className="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                                        TRUSTED OWO <span className="text-crimson-500 text-xs px-2 py-0.5 rounded-full bg-crimson-950/80 border border-crimson-600/50">GEN V4</span>
+                                    </h1>
+                                    <p className="text-xs text-gray-400">Enterprise Multi-Token Farm Controller</p>
+                                </div>
+                            </div>
+
+                            {/* Navigation Tabs */}
+                            <nav className="flex space-x-1 sm:space-x-2">
+                                {[
+                                    { id: "overview", label: "Overview", icon: "📊" },
+                                    { id: "accounts", label: "3 Accounts", icon: "👥" },
+                                    { id: "terminal", label: "Live Terminal", icon: "💻" },
+                                    { id: "config", label: "Shared Config", icon: "⚙️" },
+                                    { id: "safety", label: "Safety & Captcha", icon: "🛡️" },
+                                ].map((tab) => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={`px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center gap-1.5 ${
+                                            activeTab === tab.id
+                                                ? "bg-gradient-to-r from-crimson-600 to-rose-600 text-white shadow-neon-red font-semibold"
+                                                : "text-gray-400 hover:text-white hover:bg-dark-700/60"
+                                        }`}
+                                    >
+                                        <span>{tab.icon}</span>
+                                        <span>{tab.label}</span>
+                                    </button>
+                                ))}
+                            </nav>
+
+                            {/* Global Action / Status */}
+                            <div className="hidden md:flex items-center space-x-3">
+                                <div className="flex items-center space-x-2 text-xs bg-dark-700/70 border border-crimson-900/50 px-3 py-1.5 rounded-lg">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    <span className="text-gray-300 font-mono">Uptime: {formatUptime(stats.globalUptime)}</span>
+                                </div>
+                                <button
+                                    onClick={() => handlePause("all")}
+                                    className="px-3 py-1.5 bg-crimson-950/60 hover:bg-crimson-900/80 border border-crimson-600/40 text-crimson-400 text-xs rounded-lg font-medium transition-all"
+                                >
+                                    Pause All
+                                </button>
+                                <button
+                                    onClick={() => handleResume("all")}
+                                    className="px-3 py-1.5 bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-600/40 text-emerald-400 text-xs rounded-lg font-medium transition-all"
+                                >
+                                    Resume All
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Main Content Area */}
+                    <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                        <AnimatePresence mode="wait">
+                            {/* PAGE 1: OVERVIEW */}
+                            {activeTab === "overview" && (
+                                <motion.div
+                                    key="overview"
+                                    initial={{ opacity: 0, y: 15 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -15 }}
+                                    transition={{ duration: 0.25 }}
+                                    className="space-y-6"
+                                >
+                                    {/* Stat KPI Cards */}
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        <div className="glass-panel p-5 rounded-2xl relative overflow-hidden">
+                                            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Active Bots</div>
+                                            <div className="mt-2 text-3xl font-extrabold text-white flex items-center gap-2">
+                                                {stats.activeCount} <span className="text-sm font-normal text-gray-400">/ {accounts.length || 3}</span>
+                                            </div>
+                                            <div className="mt-1 text-xs text-emerald-400 flex items-center gap-1">
+                                                <span className="w-2 h-2 rounded-full bg-emerald-400"></span> Concurrently Running
+                                            </div>
+                                            <div className="absolute -right-3 -bottom-3 w-16 h-16 bg-crimson-600/10 rounded-full blur-xl pointer-events-none"></div>
+                                        </div>
+
+                                        <div className="glass-panel p-5 rounded-2xl relative overflow-hidden">
+                                            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Commands</div>
+                                            <div className="mt-2 text-3xl font-extrabold text-white font-mono">
+                                                {stats.totalCommands.toLocaleString()}
+                                            </div>
+                                            <div className="mt-1 text-xs text-crimson-400">Auto-Hunt & Battle Active</div>
+                                            <div className="absolute -right-3 -bottom-3 w-16 h-16 bg-crimson-600/10 rounded-full blur-xl pointer-events-none"></div>
+                                        </div>
+
+                                        <div className="glass-panel p-5 rounded-2xl relative overflow-hidden">
+                                            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Captchas Solved</div>
+                                            <div className="mt-2 text-3xl font-extrabold text-emerald-400 font-mono">
+                                                {stats.totalCaptchaSolved}
+                                            </div>
+                                            <div className="mt-1 text-xs text-gray-400">Failed: {stats.totalCaptchaFailed}</div>
+                                            <div className="absolute -right-3 -bottom-3 w-16 h-16 bg-emerald-500/10 rounded-full blur-xl pointer-events-none"></div>
+                                        </div>
+
+                                        <div className="glass-panel p-5 rounded-2xl relative overflow-hidden">
+                                            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Active Channel</div>
+                                            <div className="mt-2 text-xl font-bold text-white truncate">
+                                                #{accounts[0]?.channelName || "auto-detected"}
+                                            </div>
+                                            <div className="mt-1 text-xs text-gray-400">Guild: {config.guildID || "Synced"}</div>
+                                            <div className="absolute -right-3 -bottom-3 w-16 h-16 bg-crimson-600/10 rounded-full blur-xl pointer-events-none"></div>
+                                        </div>
+                                    </div>
+
+                                    {/* 3 Account Cards Grid */}
+                                    <div>
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                                                <span>⚡ Multi-Token Live Status (3 Accounts)</span>
+                                            </h2>
+                                            <span className="text-xs text-gray-400">All 3 accounts operate under a single unified configuration</span>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                            {[0, 1, 2].map((idx) => {
+                                                const acc = accounts[idx];
+                                                const isOnline = !!acc;
+                                                const isPaused = acc?.status === "paused";
+                                                const isCaptcha = acc?.status === "captcha";
+
+                                                return (
+                                                    <motion.div
+                                                        key={idx}
+                                                        whileHover={{ y: -4 }}
+                                                        className="glass-panel rounded-2xl p-5 border border-crimson-900/40 relative shadow-neon-card"
+                                                    >
+                                                        <div className="flex items-start justify-between">
+                                                            <div className="flex items-center space-x-3">
+                                                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-dark-700 to-crimson-950 border border-crimson-700/40 flex items-center justify-center font-bold text-lg text-white shadow-inner">
+                                                                    {acc?.username ? acc.username.slice(0, 2).toUpperCase() : `A${idx + 1}`}
+                                                                </div>
+                                                                <div>
+                                                                    <div className="font-bold text-white text-base">
+                                                                        {acc?.username || `Account ${idx + 1}`}
+                                                                    </div>
+                                                                    <div className="text-xs text-gray-400 font-mono">
+                                                                        {acc?.tag || "Pending Token..."}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                                                isCaptcha
+                                                                    ? "bg-amber-950 text-amber-400 border border-amber-600/50 animate-pulse"
+                                                                    : isPaused
+                                                                    ? "bg-zinc-800 text-zinc-400 border border-zinc-700"
+                                                                    : isOnline
+                                                                    ? "bg-crimson-950 text-crimson-400 border border-crimson-600/60 flex items-center gap-1.5"
+                                                                    : "bg-dark-700 text-gray-500"
+                                                            }`}>
+                                                                {isOnline && !isPaused && <span className="w-1.5 h-1.5 rounded-full bg-crimson-500 animate-ping"></span>}
+                                                                {isCaptcha ? "CAPTCHA" : isPaused ? "PAUSED" : isOnline ? "FARMING" : "STANDBY"}
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="mt-5 space-y-2.5 text-xs text-gray-300 border-t border-dark-600/60 pt-4">
+                                                            <div className="flex justify-between">
+                                                                <span className="text-gray-400">Channel:</span>
+                                                                <span className="font-semibold text-white">#{acc?.channelName || "N/A"}</span>
+                                                            </div>
+                                                            <div className="flex justify-between">
+                                                                <span className="text-gray-400">Latency:</span>
+                                                                <span className="font-mono text-emerald-400">{acc?.ping || 0} ms</span>
+                                                            </div>
+                                                            <div className="flex justify-between">
+                                                                <span className="text-gray-400">Commands Sent:</span>
+                                                                <span className="font-mono text-white font-semibold">{acc?.totalCommands || 0}</span>
+                                                            </div>
+                                                            <div className="flex justify-between">
+                                                                <span className="text-gray-400">Captchas:</span>
+                                                                <span className="text-emerald-400">{acc?.totalCaptchaSolved || 0} solved</span>
+                                                            </div>
+                                                            <div className="flex justify-between">
+                                                                <span className="text-gray-400">Uptime:</span>
+                                                                <span className="font-mono text-gray-300">{acc ? formatUptime(acc.uptime) : "0s"}</span>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="mt-5 pt-3 border-t border-dark-600/60 flex items-center justify-between">
+                                                            {isOnline ? (
+                                                                isPaused ? (
+                                                                    <button
+                                                                        onClick={() => handleResume(acc.id)}
+                                                                        className="w-full py-2 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 text-xs font-semibold rounded-xl transition-all"
+                                                                    >
+                                                                        ▶ Resume Farming
+                                                                    </button>
+                                                                ) : (
+                                                                    <button
+                                                                        onClick={() => handlePause(acc.id)}
+                                                                        className="w-full py-2 bg-crimson-950/60 hover:bg-crimson-900/80 border border-crimson-600/40 text-crimson-300 text-xs font-semibold rounded-xl transition-all"
+                                                                    >
+                                                                        ⏸ Pause Bot
+                                                                    </button>
+                                                                )
+                                                            ) : (
+                                                                <span className="text-xs text-gray-500 text-center w-full py-2">
+                                                                    Waiting for token in CLI / Settings
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </motion.div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {/* PAGE 2: ACCOUNTS */}
+                            {activeTab === "accounts" && (
+                                <motion.div
+                                    key="accounts"
+                                    initial={{ opacity: 0, y: 15 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -15 }}
+                                    className="space-y-6"
+                                >
+                                    <div className="glass-panel p-6 rounded-2xl border border-crimson-900/50">
+                                        <h2 className="text-xl font-bold text-white mb-2">3 Multi-Token Roster</h2>
+                                        <p className="text-sm text-gray-400 mb-6">
+                                            All accounts share the 1-time unified farm settings. You can monitor and control each individual account below.
+                                        </p>
+
+                                        <div className="space-y-4">
+                                            {accounts.map((acc, i) => (
+                                                <div key={acc.id} className="p-4 bg-dark-800/80 rounded-xl border border-crimson-900/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                                    <div className="flex items-center space-x-4">
+                                                        <div className="w-10 h-10 rounded-xl bg-crimson-900/40 border border-crimson-700/40 flex items-center justify-center font-bold text-crimson-400">
+                                                            #{i + 1}
+                                                        </div>
+                                                        <div>
+                                                            <div className="font-bold text-white text-base flex items-center gap-2">
+                                                                {acc.username}
+                                                                <span className="text-xs font-mono text-gray-400">({acc.id})</span>
+                                                            </div>
+                                                            <div className="text-xs text-gray-400 font-mono mt-0.5">
+                                                                Token: <span className="text-gray-300">{acc.token}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center space-x-3 text-xs">
+                                                        <div className="bg-dark-700 px-3 py-1.5 rounded-lg border border-dark-600">
+                                                            Channel: <span className="text-white font-semibold">#{acc.channelName}</span>
+                                                        </div>
+                                                        <div className="bg-dark-700 px-3 py-1.5 rounded-lg border border-dark-600 font-mono text-emerald-400">
+                                                            {acc.totalCommands} cmds
+                                                        </div>
+                                                        <button
+                                                            onClick={() => acc.status === "paused" ? handleResume(acc.id) : handlePause(acc.id)}
+                                                            className={`px-4 py-1.5 rounded-lg font-semibold transition-all ${
+                                                                acc.status === "paused"
+                                                                    ? "bg-emerald-600 hover:bg-emerald-500 text-white"
+                                                                    : "bg-crimson-700 hover:bg-crimson-600 text-white"
+                                                            }`}
+                                                        >
+                                                            {acc.status === "paused" ? "Resume" : "Pause"}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {accounts.length === 0 && (
+                                                <div className="text-center py-8 text-gray-400 text-sm">
+                                                    No accounts running yet. Run <code className="text-crimson-400 bg-dark-700 px-2 py-1 rounded">npm start</code> in your terminal and select Multi-Token Mode!
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {/* PAGE 3: LIVE TERMINAL */}
+                            {activeTab === "terminal" && (
+                                <motion.div
+                                    key="terminal"
+                                    initial={{ opacity: 0, y: 15 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -15 }}
+                                    className="space-y-4"
+                                >
+                                    <div className="glass-panel p-4 rounded-2xl border border-crimson-900/50 flex flex-wrap items-center justify-between gap-3">
+                                        <div className="flex items-center space-x-2">
+                                            <span className="w-3 h-3 rounded-full bg-crimson-500 animate-pulse"></span>
+                                            <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">Real-Time Console Feed</h3>
+                                            <span className="text-xs text-gray-400 font-mono">({filteredLogs.length} events)</span>
+                                        </div>
+
+                                        <div className="flex items-center space-x-3 text-xs">
+                                            {/* Level Filter */}
+                                            <select
+                                                value={logFilter}
+                                                onChange={(e) => setLogFilter(e.target.value)}
+                                                className="bg-dark-700 border border-crimson-900/60 rounded-lg px-2.5 py-1.5 text-gray-200 outline-none"
+                                            >
+                                                <option value="ALL">All Levels</option>
+                                                <option value="SENT">Commands Sent</option>
+                                                <option value="INFO">Info</option>
+                                                <option value="WARN">Warnings</option>
+                                                <option value="ERROR">Errors</option>
+                                                <option value="DATA">Data</option>
+                                            </select>
+
+                                            <label className="flex items-center space-x-1.5 cursor-pointer text-gray-300">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={autoScroll}
+                                                    onChange={(e) => setAutoScroll(e.target.checked)}
+                                                    className="accent-crimson-600 rounded"
+                                                />
+                                                <span>Auto-Scroll</span>
+                                            </label>
+
+                                            <button
+                                                onClick={() => setLogs([])}
+                                                className="px-3 py-1 bg-dark-700 hover:bg-dark-600 text-gray-300 rounded-lg border border-dark-600 transition-all"
+                                            >
+                                                Clear
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Terminal Window */}
+                                    <div className="bg-dark-900 border border-crimson-950/80 rounded-2xl p-4 font-mono text-xs h-[520px] overflow-y-auto shadow-2xl">
+                                        {filteredLogs.map((log) => {
+                                            let colorClass = "text-gray-300";
+                                            if (log.level === "sent") colorClass = "text-emerald-400 font-semibold";
+                                            else if (log.level === "error" || log.level === "alert") colorClass = "text-rose-500 font-bold";
+                                            else if (log.level === "warn") colorClass = "text-amber-400";
+                                            else if (log.level === "info") colorClass = "text-cyan-400";
+                                            else if (log.level === "data") colorClass = "text-purple-400";
+
+                                            return (
+                                                <div key={log.id} className="py-1 border-b border-dark-800/40 flex items-start gap-3 hover:bg-dark-800/40 px-2 rounded">
+                                                    <span className="text-gray-500 shrink-0 text-[11px]">{new Date(log.timestamp).toLocaleTimeString()}</span>
+                                                    <span className={`uppercase font-bold text-[10px] px-1.5 py-0.5 rounded ${
+                                                        log.level === "sent" ? "bg-emerald-950 text-emerald-400 border border-emerald-800/40" :
+                                                        log.level === "error" ? "bg-rose-950 text-rose-400 border border-rose-800/40" :
+                                                        log.level === "warn" ? "bg-amber-950 text-amber-400 border border-amber-800/40" :
+                                                        "bg-dark-700 text-gray-400"
+                                                    }`}>{log.level}</span>
+                                                    <span className={`${colorClass} break-all flex-1`}>{log.message}</span>
+                                                </div>
+                                            );
+                                        })}
+                                        {filteredLogs.length === 0 && (
+                                            <div className="text-center text-gray-600 py-20">Waiting for live log stream...</div>
+                                        )}
+                                        <div ref={terminalEndRef} />
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {/* PAGE 4: SHARED CONFIG EDITOR (1-TIME EDIT FOR ALL 3 ACCOUNTS) */}
+                            {activeTab === "config" && (
+                                <motion.div
+                                    key="config"
+                                    initial={{ opacity: 0, y: 15 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -15 }}
+                                    className="space-y-6"
+                                >
+                                    <div className="glass-panel p-6 rounded-2xl border border-crimson-900/50">
+                                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-dark-700">
+                                            <div>
+                                                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                                    <span>⚙️ 1-Time Config Editor (Applies to All 3 Accounts)</span>
+                                                </h2>
+                                                <p className="text-xs text-gray-400 mt-1">
+                                                    Change any feature below and click save. The configuration is automatically applied to all running tokens simultaneously.
+                                                </p>
+                                            </div>
+                                            <button
+                                                onClick={handleSaveConfig}
+                                                className="px-5 py-2.5 bg-gradient-to-r from-crimson-600 to-rose-600 hover:from-crimson-500 hover:to-rose-500 text-white font-bold text-sm rounded-xl shadow-neon-red transition-all flex items-center gap-2"
+                                            >
+                                                <span>💾</span>
+                                                <span>{saveStatus || "Save & Apply to All 3 Accounts"}</span>
+                                            </button>
+                                        </div>
+
+                                        <form onSubmit={handleSaveConfig} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-6">
+                                            {/* Feature Toggles */}
+                                            <div className="p-4 bg-dark-800/60 rounded-xl border border-crimson-950 space-y-4">
+                                                <h3 className="text-sm font-bold text-crimson-400 uppercase tracking-wider">Core Farming</h3>
+                                                
+                                                <label className="flex items-center justify-between cursor-pointer">
+                                                    <span className="text-xs font-semibold text-gray-200">Auto-Huntbot</span>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={config.autoHuntbot !== false}
+                                                        onChange={(e) => setConfig({ ...config, autoHuntbot: e.target.checked })}
+                                                        className="w-4 h-4 accent-crimson-600 rounded cursor-pointer"
+                                                    />
+                                                </label>
+
+                                                <label className="flex items-center justify-between cursor-pointer">
+                                                    <span className="text-xs font-semibold text-gray-200">Auto-Battle</span>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={config.autoBattle !== false}
+                                                        onChange={(e) => setConfig({ ...config, autoBattle: e.target.checked })}
+                                                        className="w-4 h-4 accent-crimson-600 rounded cursor-pointer"
+                                                    />
+                                                </label>
+
+                                                <label className="flex items-center justify-between cursor-pointer">
+                                                    <span className="text-xs font-semibold text-gray-200">Auto-Daily</span>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={config.autoDaily !== false}
+                                                        onChange={(e) => setConfig({ ...config, autoDaily: e.target.checked })}
+                                                        className="w-4 h-4 accent-crimson-600 rounded cursor-pointer"
+                                                    />
+                                                </label>
+
+                                                <label className="flex items-center justify-between cursor-pointer">
+                                                    <span className="text-xs font-semibold text-gray-200">Auto-Sleep (Humanlike)</span>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={config.autoSleep !== false}
+                                                        onChange={(e) => setConfig({ ...config, autoSleep: e.target.checked })}
+                                                        className="w-4 h-4 accent-crimson-600 rounded cursor-pointer"
+                                                    />
+                                                </label>
+                                            </div>
+
+                                            {/* Buffs & Community */}
+                                            <div className="p-4 bg-dark-800/60 rounded-xl border border-crimson-950 space-y-4">
+                                                <h3 className="text-sm font-bold text-crimson-400 uppercase tracking-wider">Buffs & Gems</h3>
+
+                                                <label className="flex items-center justify-between cursor-pointer">
+                                                    <span className="text-xs font-semibold text-gray-200">Auto-Cookie</span>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={config.autoCookie || false}
+                                                        onChange={(e) => setConfig({ ...config, autoCookie: e.target.checked })}
+                                                        className="w-4 h-4 accent-crimson-600 rounded cursor-pointer"
+                                                    />
+                                                </label>
+
+                                                <label className="flex items-center justify-between cursor-pointer">
+                                                    <span className="text-xs font-semibold text-gray-200">Auto-Clover</span>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={config.autoClover || false}
+                                                        onChange={(e) => setConfig({ ...config, autoClover: e.target.checked })}
+                                                        className="w-4 h-4 accent-crimson-600 rounded cursor-pointer"
+                                                    />
+                                                </label>
+
+                                                <label className="flex items-center justify-between cursor-pointer">
+                                                    <span className="text-xs font-semibold text-gray-200">Auto-Lootbox</span>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={config.autoLootbox !== false}
+                                                        onChange={(e) => setConfig({ ...config, autoLootbox: e.target.checked })}
+                                                        className="w-4 h-4 accent-crimson-600 rounded cursor-pointer"
+                                                    />
+                                                </label>
+
+                                                <label className="flex items-center justify-between cursor-pointer">
+                                                    <span className="text-xs font-semibold text-gray-200">Auto-Sell</span>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={config.autoSell || false}
+                                                        onChange={(e) => setConfig({ ...config, autoSell: e.target.checked })}
+                                                        className="w-4 h-4 accent-crimson-600 rounded cursor-pointer"
+                                                    />
+                                                </label>
+                                            </div>
+
+                                            {/* Captcha & Notifications */}
+                                            <div className="p-4 bg-dark-800/60 rounded-xl border border-crimson-950 space-y-4">
+                                                <h3 className="text-sm font-bold text-crimson-400 uppercase tracking-wider">Captcha & Webhook</h3>
+
+                                                <div>
+                                                    <label className="text-xs font-semibold text-gray-300 block mb-1">Captcha Service</label>
+                                                    <select
+                                                        value={config.captchaAPI || "none"}
+                                                        onChange={(e) => setConfig({ ...config, captchaAPI: e.target.value === "none" ? undefined : e.target.value })}
+                                                        className="w-full bg-dark-700 border border-dark-600 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none"
+                                                    >
+                                                        <option value="none">Manual / Built-in</option>
+                                                        <option value="2captcha">2Captcha</option>
+                                                        <option value="yescaptcha">YesCaptcha</option>
+                                                    </select>
+                                                </div>
+
+                                                <div>
+                                                    <label className="text-xs font-semibold text-gray-300 block mb-1">Captcha API Key</label>
+                                                    <input
+                                                        type="text"
+                                                        value={config.apiKey || ""}
+                                                        onChange={(e) => setConfig({ ...config, apiKey: e.target.value })}
+                                                        placeholder="API Key..."
+                                                        className="w-full bg-dark-700 border border-dark-600 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none font-mono"
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label className="text-xs font-semibold text-gray-300 block mb-1">Discord Webhook Alert URL</label>
+                                                    <input
+                                                        type="text"
+                                                        value={config.webhookURL || ""}
+                                                        onChange={(e) => setConfig({ ...config, webhookURL: e.target.value })}
+                                                        placeholder="https://discord.com/api/webhooks/..."
+                                                        className="w-full bg-dark-700 border border-dark-600 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none font-mono"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {/* PAGE 5: SAFETY */}
+                            {activeTab === "safety" && (
+                                <motion.div
+                                    key="safety"
+                                    initial={{ opacity: 0, y: 15 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -15 }}
+                                    className="space-y-6"
+                                >
+                                    <div className="glass-panel p-6 rounded-2xl border border-crimson-900/50">
+                                        <h2 className="text-xl font-bold text-white mb-2">🛡️ Anti-Detection & Safety Matrix</h2>
+                                        <p className="text-sm text-gray-400 mb-6">
+                                            The system employs advanced human emulation across all 3 concurrent tokens.
+                                        </p>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                            <div className="p-4 bg-dark-800/80 rounded-xl border border-dark-600">
+                                                <div className="text-emerald-400 font-bold text-sm mb-1">✓ Randomized Typing Delays</div>
+                                                <div className="text-xs text-gray-400">Emulates realistic keystrokes between 500ms and 1400ms before sending commands.</div>
+                                            </div>
+
+                                            <div className="p-4 bg-dark-800/80 rounded-xl border border-dark-600">
+                                                <div className="text-emerald-400 font-bold text-sm mb-1">✓ Dynamic Sleep Cycles</div>
+                                                <div className="text-xs text-gray-400">Tokens automatically take humanlike breaks after prolonged farm runs.</div>
+                                            </div>
+
+                                            <div className="p-4 bg-dark-800/80 rounded-xl border border-dark-600">
+                                                <div className="text-emerald-400 font-bold text-sm mb-1">✓ Instant Captcha Pause</div>
+                                                <div className="text-xs text-gray-400">Immediately stops command loop upon receiving OwO DM or captcha ping to avoid strikes.</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </main>
+
+                    {/* Footer */}
+                    <footer className="border-t border-crimson-950/60 bg-dark-900/80 py-4 mt-auto">
+                        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-500 gap-2">
+                            <div>Trusted OwO Gen v4 • High Performance Multi-Token Farming Suite</div>
+                            <div className="flex items-center gap-3">
+                                <span className="font-mono text-crimson-500">Node.js {window.location.host}</span>
+                                <span>•</span>
+                                <span className="text-emerald-500">Web Dashboard Connected</span>
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById("root"));
+        root.render(<DashboardApp />);
+    </script>
+</body>
+</html>

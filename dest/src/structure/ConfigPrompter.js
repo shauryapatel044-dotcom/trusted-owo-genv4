@@ -22,8 +22,10 @@ export class ConfigPrompter extends BasePrompter {
     listAccounts = (accounts) => this.ask((select), {
         message: t("ui.accounts.selectAccount"),
         choices: [
+            { name: "⚡ Multi-Token Mode (Run 3 Tokens Together - 1-Time Config)", value: "multi" },
+            ...(accounts.length > 1 ? [{ name: `🚀 Run All ${accounts.length} Saved Accounts Together`, value: "all" }] : []),
             ...accounts.map(account => ({
-                name: account.username,
+                name: `👤 ${account.username}`,
                 value: account.id
             })),
             new Separator(),
@@ -36,6 +38,27 @@ export class ConfigPrompter extends BasePrompter {
         validate: (input) => input.split(".").length === 3 || t("ui.token.invalidFormat"),
         transformer: (input) => input.replace(/"|'/g, "").trim(),
     });
+    getMultiTokens = async () => {
+        const tokens = [];
+        for (let i = 1; i <= 3; i++) {
+            const token = await this.ask(input, {
+                message: `[Account ${i}/3] Enter Discord Token${i > 1 ? " (or press Enter to finish)" : ""}:`,
+                validate: (val) => {
+                    if (!val.trim() && i > 1)
+                        return true;
+                    return val.split(".").length === 3 || "Token must have 3 dot-separated parts";
+                },
+                transformer: (val) => val.replace(/"|'/g, "").trim(),
+            });
+            if (token && token.trim()) {
+                tokens.push(token.trim());
+            }
+            else if (i > 1) {
+                break;
+            }
+        }
+        return tokens;
+    };
     listActions = (hasCache) => this.ask((select), {
         message: t("ui.actions.selectAction"),
         choices: [

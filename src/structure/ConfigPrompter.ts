@@ -35,12 +35,14 @@ export class ConfigPrompter extends BasePrompter {
         return this.getConfig();
     }
 
-    public listAccounts = (accounts: { username: string, id: string }[]): Promise<"qr" | "token" | string> =>
-        this.ask(select<"qr" | "token" | string>, {
+    public listAccounts = (accounts: { username: string, id: string }[]): Promise<"multi" | "all" | "qr" | "token" | string> =>
+        this.ask(select<"multi" | "all" | "qr" | "token" | string>, {
             message: t("ui.accounts.selectAccount"),
             choices: [
+                { name: "⚡ Multi-Token Mode (Run 3 Tokens Together - 1-Time Config)", value: "multi" },
+                ...(accounts.length > 1 ? [{ name: `🚀 Run All ${accounts.length} Saved Accounts Together`, value: "all" }] : []),
                 ...accounts.map(account => ({
-                    name: account.username,
+                    name: `👤 ${account.username}`,
                     value: account.id
                 })),
                 new Separator(),
@@ -54,7 +56,27 @@ export class ConfigPrompter extends BasePrompter {
             message: t("ui.token.enterToken"),
             validate: (input) => input.split(".").length === 3 || t("ui.token.invalidFormat"),
             transformer: (input) => input.replace(/"|'/g, "").trim(),
-        })
+        });
+
+    public getMultiTokens = async (): Promise<string[]> => {
+        const tokens: string[] = [];
+        for (let i = 1; i <= 3; i++) {
+            const token = await this.ask(input, {
+                message: `[Account ${i}/3] Enter Discord Token${i > 1 ? " (or press Enter to finish)" : ""}:`,
+                validate: (val) => {
+                    if (!val.trim() && i > 1) return true;
+                    return val.split(".").length === 3 || "Token must have 3 dot-separated parts";
+                },
+                transformer: (val) => val.replace(/"|'/g, "").trim(),
+            });
+            if (token && token.trim()) {
+                tokens.push(token.trim());
+            } else if (i > 1) {
+                break;
+            }
+        }
+        return tokens;
+    };
 
     public listActions = (hasCache: boolean): Promise<"run" | "edit" | "export" | "delete"> =>
         this.ask(select<"run" | "edit" | "export" | "delete">, {
