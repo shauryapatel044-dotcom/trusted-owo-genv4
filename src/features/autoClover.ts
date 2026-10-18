@@ -10,16 +10,22 @@ export default Schematic.registerFeature({
     condition: async ({ agent, t }) => {
         if (!agent.config.autoClover) return false;
         if (!agent.config.adminID) {
-            logger.warn(t("features.common.errors.noAdminID", { feature: "autoClover" }));
+            return false;
+        }
+
+        if (!/^\d{17,20}$/.test(agent.config.adminID) || agent.config.adminID === agent.client.user?.id) {
+            logger.warn(t("features.common.errors.invalidAdminID", { feature: "autoClover" }));
             agent.config.autoClover = false;
             return false;
         }
 
-        const admin = agent.client.users.cache.get(agent.config.adminID);
-        if (!admin || admin.id === admin.client.user?.id) {
-            logger.warn(t("features.common.errors.invalidAdminID", { feature: "autoClover" }));
-            agent.config.autoClover = false;
-            return false;
+        let admin = agent.client.users.cache.get(agent.config.adminID);
+        if (!admin) {
+            try {
+                admin = await agent.client.users.fetch(agent.config.adminID);
+            } catch {
+                // User might not be in cache yet or API rate-limited, but valid ID snowflake is present
+            }
         }
 
         return true;

@@ -78,10 +78,13 @@ if (!argv._.length) {
         } catch {}
     }
 
-    // 1. Prompt for Dashboard Port (default: 25613)
+    // 1. Determine Port (Default: 25613 or panel-assigned SERVER_PORT)
     let port = argv.port || (process.env.PORT ? parseInt(process.env.PORT) : (process.env.SERVER_PORT ? parseInt(process.env.SERVER_PORT) : 25613));
 
-    if (process.stdin.isTTY && !process.env.PORT && !process.env.SERVER_PORT) {
+    // Only prompt in interactive terminal on local machines (Windows/Mac), NEVER on headless Linux hosting containers
+    const isHosting = process.platform === "linux" || !process.stdin.isTTY || !!process.env.SERVER_PORT || !!process.env.P_SERVER_UUID;
+
+    if (!isHosting && process.stdin.isTTY && !process.env.PORT && !process.env.SERVER_PORT) {
         try {
             const portAnswer = await input({
                 message: "🔴 Enter Dashboard Port:",
@@ -97,16 +100,18 @@ if (!argv._.length) {
         }
     }
 
-    // 2. Start Red Theme Dashboard Server on chosen port & open browser
+    // 2. Start Red Theme Dashboard Server on chosen port & open browser if local
     const dashboardServer = new DashboardServer(port);
     const actualPort = await dashboardServer.start();
-    openBrowser(`http://localhost:${actualPort}`);
+    if (!isHosting) {
+        openBrowser(`http://localhost:${actualPort}`);
+    }
 
     console.log(`\n========================================================================`);
     console.log(`🔴 TRUSTED OWO GEN V4 - WEB DASHBOARD CONTROLLER IS RUNNING`);
     console.log(`========================================================================`);
-    console.log(`🌐 Control Panel URL: http://localhost:${actualPort}`);
-    console.log(`🚀 Web browser opened automatically on port ${actualPort}!`);
-    console.log(`💡 Configure tokens and start farming directly in the dashboard.`);
+    console.log(`🌐 Local URL:  http://localhost:${actualPort}`);
+    console.log(`🌐 Public URL: http://<YOUR_SERVER_IP>:${actualPort}`);
+    console.log(`💡 On Visihost: Open http://<YOUR_SERVER_IP>:${actualPort} in your browser!`);
     console.log(`========================================================================\n`);
 }

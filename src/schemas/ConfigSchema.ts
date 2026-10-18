@@ -23,6 +23,7 @@ export const ConfigSchema = z.object({
     captchaAPI: z.enum(["2captcha", "yescaptcha"]).optional(),
     apiKey: z.string().optional(),
     autoHuntbot: z.boolean().default(true),
+    autoBattle: z.boolean().default(true),
     autoTrait: z.enum([
         "efficiency",
         "duration",

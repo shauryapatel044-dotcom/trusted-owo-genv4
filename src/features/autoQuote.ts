@@ -6,17 +6,14 @@ export default Schematic.registerFeature({
     name: "autoQuote",
     cooldown: () => 15_000,
     condition: async ({ agent }) => {
-        return agent.config.autoQuote.length > 0;
+        return Array.isArray(agent.config.autoQuote) && agent.config.autoQuote.length > 0;
     },
     run: async ({ agent }) => {
-        let quote: string;
-        switch (agent.config.autoQuote[ranInt(0, agent.config.autoQuote.length)]) {
-            case "owo":
-                quote = "owo";
-                break;
-            case "quote":
-                quote = quotes[ranInt(0, quotes.length)];
-                break;
+        if (!Array.isArray(agent.config.autoQuote) || agent.config.autoQuote.length === 0) return;
+        const choice = agent.config.autoQuote[ranInt(0, agent.config.autoQuote.length)];
+        let quote = "owo";
+        if (choice === "quote" && quotes.length > 0) {
+            quote = quotes[ranInt(0, quotes.length)];
         }
         agent.send(quote, { prefix: "", channel: agent.activeChannel, skipLogging: true });
     }

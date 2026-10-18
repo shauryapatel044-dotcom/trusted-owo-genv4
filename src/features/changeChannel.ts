@@ -5,7 +5,7 @@ export default Schematic.registerFeature({
     name: "changeChannel",
     cooldown: () => 5 * 60 * 1000,
     condition: async ({ agent }) => {
-        if (agent.config.channelID.length <= 1) return false;
+        if (!Array.isArray(agent.config.channelID) || agent.config.channelID.length <= 1) return false;
 
         return agent.totalCommands >= agent.channelChangeThreshold;
     },

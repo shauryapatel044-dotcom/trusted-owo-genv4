@@ -31,6 +31,7 @@ const mockConfig: Configuration = {
     autoResume: true,
     autoCookie: true,
     autoHuntbot: true,
+    autoBattle: true,
     useCustomPrefix: false,
     showRPC: true,
     autoLootbox: true,

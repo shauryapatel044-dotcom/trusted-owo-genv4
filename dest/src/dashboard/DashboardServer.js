@@ -198,6 +198,10 @@ export class DashboardServer {
                         if (sanitizedConfig.autoGem && (!sanitizedConfig.gemTier || sanitizedConfig.gemTier.length === 0)) {
                             sanitizedConfig.gemTier = ["common", "uncommon", "rare", "epic", "mythical"];
                         }
+                        // Array feature defaults
+                        sanitizedConfig.autoQuote = Array.isArray(sanitizedConfig.autoQuote) && sanitizedConfig.autoQuote.length > 0 ? sanitizedConfig.autoQuote : ["owo"];
+                        sanitizedConfig.autoRPP = Array.isArray(sanitizedConfig.autoRPP) && sanitizedConfig.autoRPP.length > 0 ? sanitizedConfig.autoRPP : ["run", "pup", "piku"];
+                        sanitizedConfig.autoPray = Array.isArray(sanitizedConfig.autoPray) && sanitizedConfig.autoPray.length > 0 ? sanitizedConfig.autoPray : ["pray"];
                         for (const tok of tokens) {
                             const cleanToken = typeof tok === "string" ? tok.trim() : "";
                             if (!cleanToken)

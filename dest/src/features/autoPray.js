@@ -5,11 +5,13 @@ export default Schematic.registerFeature({
     name: "autoPray",
     cooldown: () => ranInt(5 * 60 * 1000, 8 * 60 * 1000),
     condition: async ({ agent: { config } }) => {
-        if (!config.autoPray || config.autoPray.length <= 0)
+        if (!Array.isArray(config.autoPray) || config.autoPray.length <= 0)
             return false;
         return true;
     },
     run: async ({ agent, t }) => {
+        if (!Array.isArray(agent.config.autoPray) || agent.config.autoPray.length === 0)
+            return;
         const command = agent.config.autoPray[Math.floor(Math.random() * agent.config.autoPray.length)];
         const check = await agent.awaitResponse({
             trigger: () => agent.send(command),
