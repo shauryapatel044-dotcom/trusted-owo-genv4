@@ -11,6 +11,20 @@ import { hideBin } from "yargs/helpers";
 import packageJSON from "./package.json" with { type: "json" };
 import { Locale } from "@/utils/locales.js";
 import { DashboardServer } from "@/dashboard/DashboardServer.js";
+import { exec } from "node:child_process";
+
+function openBrowser(url: string) {
+    try {
+        const platform = process.platform;
+        if (platform === "win32") {
+            exec(`start "" "${url}"`);
+        } else if (platform === "darwin") {
+            exec(`open "${url}"`);
+        } else {
+            exec(`xdg-open "${url}"`);
+        }
+    } catch {}
+}
 
 process.title = `Advanced Discord OwO Tool Farm v${packageJSON.version} - Copyright 2025 © Elysia x Kyou Izumi`;
 console.clear();
@@ -67,12 +81,13 @@ if (!argv._.length) {
     const port = argv.port || (process.env.PORT ? parseInt(process.env.PORT) : (process.env.SERVER_PORT ? parseInt(process.env.SERVER_PORT) : 3000));
     const dashboardServer = new DashboardServer(port);
     const actualPort = await dashboardServer.start();
+    openBrowser(`http://localhost:${actualPort}`);
 
     console.log(`\n========================================================================`);
     console.log(`🔴 TRUSTED OWO GEN V4 - WEB DASHBOARD CONTROLLER IS RUNNING`);
     console.log(`========================================================================`);
     console.log(`🌐 Control Panel URL: http://localhost:${actualPort}`);
-    console.log(`👉 Open the URL in your browser to enter tokens and configure all accounts!`);
+    console.log(`🚀 Panel Auto-Run: Web browser opened automatically!`);
     console.log(`💡 Zero terminal interaction required — everything is handled in the Web UI.`);
     console.log(`========================================================================\n`);
 }
