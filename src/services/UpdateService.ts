@@ -7,7 +7,15 @@ import os from "node:os";
 import { promisify } from "node:util";
 import { execSync, exec, spawn } from "node:child_process";
 
-import packageJSON from "#/package.json" with { type: "json" };
+const getPackageJson = () => {
+    try {
+        const p = path.resolve(process.cwd(), "package.json");
+        if (fs.existsSync(p)) {
+            return JSON.parse(fs.readFileSync(p, "utf-8"));
+        }
+    } catch {}
+    return { version: "4.0.0-alpha-2.7" };
+};
 import { logger } from "@/utils/logger.js";
 import { t } from "@/utils/locales.js";
 import { copyDirectory } from "../utils/path.js";
@@ -21,7 +29,7 @@ export class UpdateFeature {
     public checkForUpdates = async () => {
         logger.info(t("system.update.checkingForUpdates"));
         try {
-            const { version: currentVersion } = packageJSON;
+            const { version: currentVersion } = getPackageJson();
             const { data: { version: latestVersion } } = await axios.get(
                 "https://raw.githubusercontent.com/Kyou-Izumi/advanced-discord-owo-tool-farm/refs/heads/main/package.json",
                 {

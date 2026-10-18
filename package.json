@@ -8,7 +8,6 @@
     "node": ">=16"
   },
   "scripts": {
-    "prepare": "tsc && tsc-alias",
     "build": "tsc && tsc-alias",
     "setup": "npm install",
     "start": "npx tsx index.ts",
@@ -16,6 +15,9 @@
     "panel": "npx tsx src/dashboard/test-server.ts",
     "panel:js": "node dest/src/dashboard/test-server.js",
     "dev": "cross-env NODE_ENV=development npx tsx ."
+  },
+  "imports": {
+    "#*": "./*"
   },
   "repository": {
     "type": "git",
