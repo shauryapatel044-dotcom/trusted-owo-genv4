@@ -123,160 +123,68 @@ export class InquirerUI {
         this.client = client;
         this.configPrompter = new ConfigPrompter({ client, getConfig: () => this.config });
 
-        const accountList = this.configManager.getAllKeys().map(key => ({
-            username: this.configManager.get(key)?.username || "Unknown",
-            id: key
-        }));
+        // Retrieve any saved tokens to prefill as convenient defaults
+        const savedKeys = this.configManager.getAllKeys();
+        const savedTokens = savedKeys.map(k => this.configManager.get(k)?.token).filter(Boolean) as string[];
 
-        let accountSelection = await this.configPrompter.listAccounts(accountList);
-
-        // --- Multi-Token Mode ---
-        if (accountSelection === "multi") {
-            const tokens = await this.configPrompter.getMultiTokens();
-            if (tokens.length === 0) {
-                logger.error("No tokens provided.");
-                process.exit(1);
-            }
-
-            logger.info(`[Multi-Token] Verifying ${tokens.length} account(s)...`);
-            const verifiedAccounts: { client: ExtendedClient<true>; token: string }[] = [];
-
-            for (let i = 0; i < tokens.length; i++) {
-                const tok = tokens[i];
-                const accClient = new ExtendedClient();
-                try {
-                    logger.info(`[Account ${i + 1}/${tokens.length}] Connecting...`);
-                    await accClient.checkAccount(tok);
-                    verifiedAccounts.push({ client: accClient, token: tok });
-                    logger.info(`[Account ${i + 1}/${tokens.length}] Connected as: ${accClient.user?.username}!`);
-                } catch (err: any) {
-                    logger.error(`[Account ${i + 1}/${tokens.length}] Failed to connect: ${err.message}`);
-                }
-            }
-
-            if (verifiedAccounts.length === 0) {
-                logger.error("Failed to authenticate any of the provided accounts. Please check your tokens.");
-                process.exit(1);
-            }
-
-            // Use the first verified client as the primary client to configure settings
-            this.client = verifiedAccounts[0].client;
-            this.configPrompter = new ConfigPrompter({ client: this.client, getConfig: () => this.config });
-
-            // Check if any existing config exists to prefill
-            for (const acc of verifiedAccounts) {
-                const existing = this.configManager.get(acc.client.user.id);
-                if (existing) {
-                    this.config = { ...existing };
-                    break;
-                }
-            }
-
-            logger.info(`\n${"=".repeat(60)}\n[1-TIME CONFIGURATION] Please configure settings ONCE for ALL ${verifiedAccounts.length} accounts:\n${"=".repeat(60)}`);
-            await this.editConfig();
-
-            const finalAccounts: { client: ExtendedClient<true>; config: Configuration }[] = [];
-            for (const acc of verifiedAccounts) {
-                const accConfig = {
-                    ...this.config,
-                    token: acc.token,
-                    username: acc.client.user.username,
-                } as Configuration;
-                this.configManager.set(acc.client.user.id, accConfig);
-                finalAccounts.push({ client: acc.client, config: accConfig });
-            }
-
-            logger.info(`[Multi-Token] Successfully configured ${finalAccounts.length} accounts! Starting farming loop...`);
-            return { accounts: finalAccounts };
+        // 1. Ask for up to 3 tokens directly
+        const tokens = await this.configPrompter.getMultiTokens(savedTokens);
+        if (tokens.length === 0) {
+            logger.error("No tokens provided. At least 1 token is required.");
+            process.exit(1);
         }
 
-        // --- Run All Saved Accounts ---
-        if (accountSelection === "all") {
-            const keys = this.configManager.getAllKeys();
-            logger.info(`[All Accounts] Verifying ${keys.length} saved accounts...`);
-            const finalAccounts: { client: ExtendedClient<true>; config: Configuration }[] = [];
+        // 2. Verify all tokens with Discord Gateway
+        logger.info(`\n[Multi-Token] Verifying ${tokens.length} account(s) with Discord Gateway...`);
+        const verifiedAccounts: { client: ExtendedClient<true>; token: string }[] = [];
 
-            for (const key of keys) {
-                const savedConfig = this.configManager.get(key);
-                if (!savedConfig?.token) continue;
-                const accClient = new ExtendedClient();
-                try {
-                    await accClient.checkAccount(savedConfig.token);
-                    finalAccounts.push({ client: accClient, config: savedConfig });
-                    logger.info(`[All Accounts] Verified: ${accClient.user?.username}`);
-                } catch (err: any) {
-                    logger.error(`[All Accounts] Failed to connect ${savedConfig.username || key}: ${err.message}`);
-                }
+        for (let i = 0; i < tokens.length; i++) {
+            const tok = tokens[i];
+            const accClient = new ExtendedClient();
+            try {
+                logger.info(`[Account ${i + 1}/${tokens.length}] Connecting...`);
+                await accClient.checkAccount(tok);
+                verifiedAccounts.push({ client: accClient, token: tok });
+                logger.info(`[Account ${i + 1}/${tokens.length}] Connected as: ${accClient.user?.username}!`);
+            } catch (err: any) {
+                logger.error(`[Account ${i + 1}/${tokens.length}] Failed to connect: ${err.message}`);
             }
-
-            if (finalAccounts.length === 0) {
-                logger.error("Could not connect to any saved accounts.");
-                process.exit(1);
-            }
-
-            return { accounts: finalAccounts };
         }
 
-        // --- Single Account Flow ---
-        switch (accountSelection) {
-            case "qr":
+        if (verifiedAccounts.length === 0) {
+            logger.error("Failed to authenticate any of the provided accounts. Please check your tokens.");
+            process.exit(1);
+        }
+
+        // 3. Single 1-time unified config edit
+        this.client = verifiedAccounts[0].client;
+        this.configPrompter = new ConfigPrompter({ client: this.client, getConfig: () => this.config });
+
+        // Check if any existing config exists to prefill
+        for (const acc of verifiedAccounts) {
+            const existing = this.configManager.get(acc.client.user.id);
+            if (existing) {
+                this.config = { ...existing };
                 break;
-            case "token":
-                const token = await this.configPrompter.getToken();
-                accountSelection = Buffer.from(token.split(".")[0], "base64").toString("utf-8");
-                this.config.token = token;
-                break;
-            default:
-                const existingConfig = this.configManager.get(accountSelection);
-                if (existingConfig) this.config = { ...existingConfig, ...this.config };
-                break;
-        }
-
-        try {
-            logger.info(t("ui.messages.checkingAccount"));
-            await client.checkAccount(this.config.token);
-        } catch (error) {
-            logger.error(error as Error);
-            logger.error(t("ui.messages.invalidToken"));
-            process.exit(-1);
-        }
-
-        if (!this.config || Object.keys(this.config).length <= 5) {
-            await this.editConfig();
-        } else {
-            switch (await this.configPrompter.listActions(Object.keys(this.config).length > 1)) {
-                case "run":
-                    break;
-                case "edit":
-                    await this.editConfig();
-                    break;
-                case "export":
-                    const exportPath = path.join(process.cwd(), `${this.config.username || "unknown"}.json`);
-                    fs.writeFileSync(exportPath, JSON.stringify(this.config, null, 2));
-                    logger.info(t("ui.messages.configExported", { path: exportPath }));
-                    process.exit(0);
-                case "delete":
-                    const confirm = await this.configPrompter.trueFalse(
-                        t("ui.messages.confirmDelete", { username: this.config.username }),
-                        false
-                    );
-                    if (confirm) {
-                        this.configManager.delete(accountSelection);
-                        logger.info(t("ui.messages.configDeleted", { username: this.config.username }));
-                        process.exit(0);
-                    } else {
-                        logger.info(t("ui.messages.deletionCancelled"));
-                        process.exit(0);
-                    }
             }
         }
 
-        this.configManager.set(client.user.id, this.config as Configuration);
-        return {
-            accounts: [{
-                client: this.client,
-                config: this.config as Configuration,
-            }]
-        };
+        logger.info(`\n${"=".repeat(62)}\n  [1-TIME CONFIGURATION] Set up settings ONCE for ALL ${verifiedAccounts.length} accounts:\n${"=".repeat(62)}`);
+        await this.editConfig();
+
+        // 4. Assign single config to all verified accounts
+        const finalAccounts: { client: ExtendedClient<true>; config: Configuration }[] = [];
+        for (const acc of verifiedAccounts) {
+            const accConfig = {
+                ...this.config,
+                token: acc.token,
+                username: acc.client.user.username,
+            } as Configuration;
+            this.configManager.set(acc.client.user.id, accConfig);
+            finalAccounts.push({ client: acc.client, config: accConfig });
+        }
+
+        logger.info(`\n⚡ Successfully configured ${finalAccounts.length} accounts! Starting concurrent farming...`);
+        return { accounts: finalAccounts };
     }
 }

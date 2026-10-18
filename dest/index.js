@@ -15,6 +15,7 @@ import packageJSON from "./package.json" with { type: "json" };
 process.title = `Advanced Discord OwO Tool Farm v${packageJSON.version} - Copyright 2025 © Elysia x Kyou Izumi`;
 console.clear();
 import { DashboardServer } from "./src/dashboard/DashboardServer.js";
+import { ConfigPrompter } from "./src/structure/ConfigPrompter.js";
 const updateFeature = new UpdateFeature();
 const client = new ExtendedClient();
 const argv = await yargs(hideBin(process.argv))
@@ -61,11 +62,15 @@ if (!argv._.length) {
         }
         await client.sleep(1000); // Wait for update to complete
     }
-    // Start Red Theme Professional Dashboard Server
-    const dashboardServer = new DashboardServer();
-    const port = await dashboardServer.start();
+    // 1. Ask for Red Dashboard Port first!
+    const prompter = new ConfigPrompter({ client, getConfig: () => ({}) });
+    const port = await prompter.getDashboardPort();
+    // Start Red Theme Professional Dashboard Server on requested port
+    const dashboardServer = new DashboardServer(port);
+    await dashboardServer.start();
     logger.info(`🔴 Red Theme Professional Dashboard online at http://localhost:${port}`);
-    const { accounts } = await InquirerUI.prompt();
+    // 2. Prompt for 3 tokens, verify them, and configure single unified settings
+    const { accounts } = await InquirerUI.prompt(client);
     logger.info(`⚡ Starting concurrent farming loop for ${accounts.length} account(s)...`);
     for (const acc of accounts) {
         await BaseAgent.initialize(acc.client, acc.config);

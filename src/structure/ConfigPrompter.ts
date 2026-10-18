@@ -58,19 +58,42 @@ export class ConfigPrompter extends BasePrompter {
             transformer: (input) => input.replace(/"|'/g, "").trim(),
         });
 
-    public getMultiTokens = async (): Promise<string[]> => {
+    public getDashboardPort = async (): Promise<number> => {
+        const defaultPort = process.env.PORT || process.env.SERVER_PORT || "3000";
+        const answer = await this.ask(input, {
+            message: "🔴 Enter Dashboard Port (default: 3000):",
+            default: defaultPort,
+            validate: (val) => {
+                const p = parseInt(val ? val.toString().trim() : defaultPort);
+                return (!isNaN(p) && p > 0 && p < 65536) || "Please enter a valid port between 1 and 65535";
+            },
+        });
+        return parseInt(answer ? answer.toString().trim() : defaultPort);
+    };
+
+    public getMultiTokens = async (savedTokens: string[] = []): Promise<string[]> => {
         const tokens: string[] = [];
+        console.log("\n" + "=".repeat(62));
+        console.log("  ⚡ MULTI-TOKEN SETUP: Enter up to 3 Discord Tokens");
+        console.log("=".repeat(62));
+
         for (let i = 1; i <= 3; i++) {
+            const defaultToken = savedTokens[i - 1] || "";
             const token = await this.ask(input, {
                 message: `[Account ${i}/3] Enter Discord Token${i > 1 ? " (or press Enter to finish)" : ""}:`,
+                default: defaultToken || undefined,
                 validate: (val) => {
-                    if (!val.trim() && i > 1) return true;
-                    return val.split(".").length === 3 || "Token must have 3 dot-separated parts";
+                    const clean = val ? val.trim() : "";
+                    if (!clean && (i > 1 || defaultToken)) return true;
+                    if (!clean && i === 1 && !defaultToken) return "At least 1 token is required";
+                    return clean.split(".").length === 3 || "Token must have 3 dot-separated parts";
                 },
                 transformer: (val) => val.replace(/"|'/g, "").trim(),
             });
-            if (token && token.trim()) {
-                tokens.push(token.trim());
+
+            const cleanToken = token ? token.trim() : (defaultToken || "");
+            if (cleanToken) {
+                tokens.push(cleanToken);
             } else if (i > 1) {
                 break;
             }
