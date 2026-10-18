@@ -1381,6 +1381,14 @@
                 return;
             }
 
+            const webhookURL = document.getElementById('cfg-webhookURL')?.value.trim();
+            const captchaAPI = document.getElementById('cfg-captchaAPI')?.value;
+            const apiKey = document.getElementById('cfg-apiKey')?.value.trim();
+            const adminID = document.getElementById('cfg-adminID')?.value.trim();
+
+            const wayNotify = [];
+            if (webhookURL) wayNotify.push('webhook');
+
             const payload = {
                 tokens,
                 config: {
@@ -1394,15 +1402,15 @@
                     autoClover: document.getElementById('cfg-autoClover')?.checked ?? true,
                     autoLootbox: document.getElementById('cfg-autoLootbox')?.checked ?? true,
                     autoSell: document.getElementById('cfg-autoSell')?.checked ?? false,
-                    adminID: document.getElementById('cfg-adminID')?.value.trim() || undefined,
-                    captchaAPI: document.getElementById('cfg-captchaAPI')?.value || undefined,
-                    apiKey: document.getElementById('cfg-apiKey')?.value.trim() || undefined,
-                    webhookURL: document.getElementById('cfg-webhookURL')?.value.trim() || undefined,
+                    adminID: adminID || undefined,
+                    captchaAPI: (captchaAPI && apiKey) ? captchaAPI : undefined,
+                    apiKey: (captchaAPI && apiKey) ? apiKey : undefined,
+                    webhookURL: webhookURL || undefined,
                     prefix: 'owo',
                     autoPray: ['pray'],
                     autoGem: 0,
                     gemTier: ['common', 'uncommon', 'rare', 'epic', 'mythical'],
-                    wayNotify: ['webhook']
+                    wayNotify
                 }
             };
 
@@ -1431,6 +1439,14 @@
             const channelRaw = document.getElementById('cfg-channelID')?.value.trim();
             const channelID = channelRaw ? channelRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
 
+            const webhookURL = document.getElementById('cfg-webhookURL')?.value.trim();
+            const captchaAPI = document.getElementById('cfg-captchaAPI')?.value;
+            const apiKey = document.getElementById('cfg-apiKey')?.value.trim();
+            const adminID = document.getElementById('cfg-adminID')?.value.trim();
+
+            const wayNotify = [];
+            if (webhookURL) wayNotify.push('webhook');
+
             const newCfg = {
                 guildID,
                 channelID,
@@ -1442,10 +1458,11 @@
                 autoClover: document.getElementById('cfg-autoClover')?.checked,
                 autoLootbox: document.getElementById('cfg-autoLootbox')?.checked,
                 autoSell: document.getElementById('cfg-autoSell')?.checked,
-                adminID: document.getElementById('cfg-adminID')?.value.trim() || undefined,
-                captchaAPI: document.getElementById('cfg-captchaAPI')?.value || undefined,
-                apiKey: document.getElementById('cfg-apiKey')?.value.trim() || undefined,
-                webhookURL: document.getElementById('cfg-webhookURL')?.value.trim() || undefined
+                adminID: adminID || undefined,
+                captchaAPI: (captchaAPI && apiKey) ? captchaAPI : undefined,
+                apiKey: (captchaAPI && apiKey) ? apiKey : undefined,
+                webhookURL: webhookURL || undefined,
+                wayNotify
             };
 
             try {

@@ -168,6 +168,51 @@ export class DashboardServer {
                         logger.info(`[Setup] Launching multi-token farm for ${tokens.length} account(s)...`);
                         const launchedAccounts: string[] = [];
 
+                        // Clean and normalize config to strictly satisfy ConfigSchema
+                        const sanitizedConfig: any = { ...config };
+
+                        // Webhook URL & wayNotify
+                        if (sanitizedConfig.webhookURL && typeof sanitizedConfig.webhookURL === "string" && sanitizedConfig.webhookURL.trim()) {
+                            sanitizedConfig.webhookURL = sanitizedConfig.webhookURL.trim();
+                            if (!Array.isArray(sanitizedConfig.wayNotify)) sanitizedConfig.wayNotify = [];
+                            if (!sanitizedConfig.wayNotify.includes("webhook")) sanitizedConfig.wayNotify.push("webhook");
+                        } else {
+                            delete sanitizedConfig.webhookURL;
+                            if (Array.isArray(sanitizedConfig.wayNotify)) {
+                                sanitizedConfig.wayNotify = sanitizedConfig.wayNotify.filter((w: string) => w !== "webhook");
+                            } else {
+                                sanitizedConfig.wayNotify = [];
+                            }
+                        }
+
+                        // Admin ID
+                        if (sanitizedConfig.adminID && typeof sanitizedConfig.adminID === "string" && sanitizedConfig.adminID.trim()) {
+                            sanitizedConfig.adminID = sanitizedConfig.adminID.trim();
+                        } else {
+                            delete sanitizedConfig.adminID;
+                            if (Array.isArray(sanitizedConfig.wayNotify)) {
+                                sanitizedConfig.wayNotify = sanitizedConfig.wayNotify.filter((w: string) => w !== "dms" && w !== "call");
+                            }
+                        }
+
+                        // Captcha API Key & captchaAPI
+                        if (sanitizedConfig.captchaAPI && sanitizedConfig.apiKey && typeof sanitizedConfig.apiKey === "string" && sanitizedConfig.apiKey.trim()) {
+                            sanitizedConfig.apiKey = sanitizedConfig.apiKey.trim();
+                        } else {
+                            delete sanitizedConfig.captchaAPI;
+                            delete sanitizedConfig.apiKey;
+                        }
+
+                        // Music path
+                        if (!sanitizedConfig.musicPath && Array.isArray(sanitizedConfig.wayNotify)) {
+                            sanitizedConfig.wayNotify = sanitizedConfig.wayNotify.filter((w: string) => w !== "music");
+                        }
+
+                        // Gem Tier default
+                        if (sanitizedConfig.autoGem && (!sanitizedConfig.gemTier || sanitizedConfig.gemTier.length === 0)) {
+                            sanitizedConfig.gemTier = ["common", "uncommon", "rare", "epic", "mythical"];
+                        }
+
                         for (const tok of tokens) {
                             const cleanToken = typeof tok === "string" ? tok.trim() : "";
                             if (!cleanToken) continue;
@@ -180,7 +225,7 @@ export class DashboardServer {
                             }
 
                             const accConfig = {
-                                ...config,
+                                ...sanitizedConfig,
                                 token: cleanToken,
                                 username: client.user.username,
                             } as Configuration;

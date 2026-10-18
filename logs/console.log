@@ -2950,3 +2950,26 @@ Error [INTERACTION_FAILED]: No responsed from Application
 2026-10-18 11:38:03 [SENT] [GemFarmer] Executed 'owo battle' in #owo-grind-main
 2026-10-18 11:43:58 [INFO] [Dashboard] Red Enterprise Dashboard running at http://0.0.0.0:3000
 2026-10-18 11:45:44 [INFO] [Dashboard] Red Enterprise Dashboard running at http://0.0.0.0:3000
+2026-10-18 11:51:25 [INFO] [Dashboard] Red Enterprise Dashboard running at http://0.0.0.0:3000
+2026-10-18 11:53:35 [INFO] [Setup] Launching multi-token farm for 3 account(s)...
+2026-10-18 11:53:35 [INFO] [Discord] [WS => Shard 0] [WebSocketShard] send packet '{"op":2,"d":{"capabilities":0,"properties":{"os":"Wind
+2026-10-18 11:53:42 [INFO] [Discord] [WS => Shard 0] [READY] Session 01e0d1f57442b0deb746368c72c4a6ff | Resume url wss://gateway-us-east1
+2026-10-18 11:53:42 [INFO] [Discord] [WS => Shard 0] Shard received all its guilds. Marking as fully ready.
+2026-10-18 11:53:42 [INFO] [INFO] Verified account: vexezor.gg
+2026-10-18 11:53:42 [ERROR] [Setup] Failed to start farm: Invalid configuration for key "1307026741138559088": [
+  {
+    "code": "custom",
+    "message": "Webhook URL is required when 'webhook' is selected in wayNotify",
+    "path": []
+  }
+]
+2026-10-18 11:54:04 [INFO] [Discord] [WS => Shard 0] [WebSocketShard] send packet '{"op":2,"d":{"capabilities":0,"properties":{"os":"Wind
+2026-10-18 11:54:06 [INFO] [Discord] [WS => Shard 0] [READY] Session d9651667b6701e0feb7d69d0e7259e00 | Resume url wss://gateway-us-east1
+2026-10-18 11:54:06 [INFO] [Discord] [WS => Shard 0] Shard received all its guilds. Marking as fully ready.
+2026-10-18 11:54:06 [INFO] [INFO] Verified account: fflover.gg
+2026-10-18 11:54:07 [INFO] [Discord] [WS => Shard 0] [WebSocketShard] send packet '{"op":2,"d":{"capabilities":0,"properties":{"os":"Wind
+2026-10-18 11:54:10 [INFO] [Discord] [WS => Shard 0] [READY] Session f450f301e0d07ac02bbaee4e569a1bc0 | Resume url wss://gateway-us-east1
+2026-10-18 11:54:10 [INFO] [Discord] [WS => Shard 0] Shard received all its guilds. Marking as fully ready.
+2026-10-18 11:54:10 [INFO] [INFO] Verified account: ventura.py
+2026-10-18 11:59:02 [WARNING] [Dashboard] Port 3000 in use, trying 3001...
+2026-10-18 11:59:02 [INFO] [Dashboard] Red Enterprise Dashboard running at http://0.0.0.0:3001
