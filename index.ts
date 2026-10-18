@@ -12,6 +12,7 @@ import packageJSON from "./package.json" with { type: "json" };
 import { Locale } from "@/utils/locales.js";
 import { DashboardServer } from "@/dashboard/DashboardServer.js";
 import { exec } from "node:child_process";
+import { input } from "@inquirer/prompts";
 
 function openBrowser(url: string) {
     try {
@@ -77,8 +78,26 @@ if (!argv._.length) {
         } catch {}
     }
 
-    // Launch Red Theme Professional Dashboard Web Controller directly
-    const port = argv.port || (process.env.PORT ? parseInt(process.env.PORT) : (process.env.SERVER_PORT ? parseInt(process.env.SERVER_PORT) : 3000));
+    // 1. Prompt for Dashboard Port (default: 3000)
+    let port = argv.port || (process.env.PORT ? parseInt(process.env.PORT) : (process.env.SERVER_PORT ? parseInt(process.env.SERVER_PORT) : 3000));
+
+    if (process.stdin.isTTY && !process.env.PORT && !process.env.SERVER_PORT) {
+        try {
+            const portAnswer = await input({
+                message: "🔴 Enter Dashboard Port:",
+                default: port.toString(),
+                validate: (val) => {
+                    const p = parseInt(val ? val.trim() : port.toString());
+                    return (!isNaN(p) && p > 0 && p < 65536) || "Please enter a valid port between 1 and 65535";
+                }
+            });
+            port = parseInt(portAnswer.trim());
+        } catch {
+            // Fallback to default port if prompt canceled
+        }
+    }
+
+    // 2. Start Red Theme Dashboard Server on chosen port & open browser
     const dashboardServer = new DashboardServer(port);
     const actualPort = await dashboardServer.start();
     openBrowser(`http://localhost:${actualPort}`);
@@ -87,7 +106,7 @@ if (!argv._.length) {
     console.log(`🔴 TRUSTED OWO GEN V4 - WEB DASHBOARD CONTROLLER IS RUNNING`);
     console.log(`========================================================================`);
     console.log(`🌐 Control Panel URL: http://localhost:${actualPort}`);
-    console.log(`🚀 Panel Auto-Run: Web browser opened automatically!`);
-    console.log(`💡 Zero terminal interaction required — everything is handled in the Web UI.`);
+    console.log(`🚀 Web browser opened automatically on port ${actualPort}!`);
+    console.log(`💡 Configure tokens and start farming directly in the dashboard.`);
     console.log(`========================================================================\n`);
 }

@@ -2973,3 +2973,4 @@ Error [INTERACTION_FAILED]: No responsed from Application
 2026-10-18 11:54:10 [INFO] [INFO] Verified account: ventura.py
 2026-10-18 11:59:02 [WARNING] [Dashboard] Port 3000 in use, trying 3001...
 2026-10-18 11:59:02 [INFO] [Dashboard] Red Enterprise Dashboard running at http://0.0.0.0:3001
+2026-10-18 12:00:29 [INFO] [Dashboard] Red Enterprise Dashboard running at http://0.0.0.0:3000
