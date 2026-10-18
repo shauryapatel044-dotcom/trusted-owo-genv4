@@ -3,7 +3,7 @@ import { dashboardState } from "./DashboardState.js";
 import { logger } from "@/utils/logger.js";
 import { Configuration } from "@/schemas/ConfigSchema.js";
 
-const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
+const port = process.env.PORT ? parseInt(process.env.PORT) : 25613;
 const server = new DashboardServer(port);
 
 // Mock Accounts for interactive panel testing

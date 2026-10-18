@@ -13,7 +13,7 @@ export class DashboardServer {
     port;
     configManager = new ConfigManager();
     constructor(port) {
-        this.port = port || (process.env.PORT ? parseInt(process.env.PORT) : (process.env.SERVER_PORT ? parseInt(process.env.SERVER_PORT) : 3000));
+        this.port = port || (process.env.PORT ? parseInt(process.env.PORT) : (process.env.SERVER_PORT ? parseInt(process.env.SERVER_PORT) : 25613));
     }
     start() {
         return new Promise((resolve) => {

@@ -39,9 +39,9 @@ export class ConfigPrompter extends BasePrompter {
         transformer: (input) => input.replace(/"|'/g, "").trim(),
     });
     getDashboardPort = async () => {
-        const defaultPort = process.env.PORT || process.env.SERVER_PORT || "3000";
+        const defaultPort = process.env.PORT || process.env.SERVER_PORT || "25613";
         const answer = await this.ask(input, {
-            message: "🔴 Enter Dashboard Port (default: 3000):",
+            message: "🔴 Enter Dashboard Port (default: 25613):",
             default: defaultPort,
             validate: (val) => {
                 const p = parseInt(val ? val.toString().trim() : defaultPort);

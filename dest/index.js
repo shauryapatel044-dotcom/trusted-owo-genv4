@@ -40,8 +40,8 @@ const argv = await yargs(hideBin(process.argv))
     .option("port", {
     alias: "p",
     type: "number",
-    description: "Web Dashboard Port (default: 3000)",
-    default: process.env.PORT ? parseInt(process.env.PORT) : (process.env.SERVER_PORT ? parseInt(process.env.SERVER_PORT) : 3000),
+    description: "Web Dashboard Port (default: 25613)",
+    default: process.env.PORT ? parseInt(process.env.PORT) : (process.env.SERVER_PORT ? parseInt(process.env.SERVER_PORT) : 25613),
 })
     .option("verbose", {
     alias: "v",
@@ -74,8 +74,8 @@ if (!argv._.length) {
         }
         catch { }
     }
-    // 1. Prompt for Dashboard Port (default: 3000)
-    let port = argv.port || (process.env.PORT ? parseInt(process.env.PORT) : (process.env.SERVER_PORT ? parseInt(process.env.SERVER_PORT) : 3000));
+    // 1. Prompt for Dashboard Port (default: 25613)
+    let port = argv.port || (process.env.PORT ? parseInt(process.env.PORT) : (process.env.SERVER_PORT ? parseInt(process.env.SERVER_PORT) : 25613));
     if (process.stdin.isTTY && !process.env.PORT && !process.env.SERVER_PORT) {
         try {
             const portAnswer = await input({
