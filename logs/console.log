@@ -2904,3 +2904,47 @@ Error [INTERACTION_FAILED]: No responsed from Application
 2026-10-17 15:41:36 [SENT] o hunt
 2026-10-17 15:41:37 [DEBUG] Response received: **🌱 | root@vexezor**, hunt is empo...
 2026-10-18 11:18:26 [INFO] [Dashboard] Red Enterprise Dashboard running at http://0.0.0.0:3099
+2026-10-18 11:35:10 [INFO] [System] Initializing Red Theme Enterprise Dashboard...
+2026-10-18 11:35:10 [INFO] [System] Running in interactive test / preview mode.
+2026-10-18 11:35:10 [INFO] [Gateway] Connected 3 accounts concurrently to Discord Gateway.
+2026-10-18 11:35:10 [SENT] [OwoMaster] Sent 'owo hunt' in #owo-grind-main
+2026-10-18 11:35:10 [SENT] [GemFarmer] Sent 'owo battle' in #owo-grind-main
+2026-10-18 11:35:10 [INFO] [Safety] Randomized human typing latency: 840ms. Anti-ban active.
+2026-10-18 11:35:10 [INFO] [Dashboard] Red Enterprise Dashboard running at http://0.0.0.0:3000
+2026-10-18 11:35:30 [SENT] [GemFarmer] Executed 'owo lb all' in #owo-grind-main
+2026-10-18 11:35:34 [SENT] [OwoMaster] Executed 'owo lb all' in #owo-grind-main
+2026-10-18 11:35:38 [SENT] [OwoMaster] Executed 'owo lb all' in #owo-grind-main
+2026-10-18 11:35:46 [SENT] [GemFarmer] Executed 'owo lb all' in #owo-grind-main
+2026-10-18 11:35:50 [SENT] [OwoMaster] Executed 'owo inv' in #owo-grind-main
+2026-10-18 11:35:54 [SENT] [GemFarmer] Executed 'owo inv' in #owo-grind-main
+2026-10-18 11:35:58 [SENT] [GemFarmer] Executed 'owo hunt' in #owo-grind-main
+2026-10-18 11:36:06 [SENT] [GemFarmer] Executed 'owo inv' in #owo-grind-main
+2026-10-18 11:36:10 [SENT] [GemFarmer] Executed 'owo battle' in #owo-grind-main
+2026-10-18 11:36:18 [SENT] [GemFarmer] Executed 'owo battle' in #owo-grind-main
+2026-10-18 11:36:25 [WARNING] [Dashboard] Paused ALL accounts.
+2026-10-18 11:36:26 [INFO] [Dashboard] Resumed ALL accounts.
+2026-10-18 11:36:26 [SENT] [NightCrawler] Executed 'owo pray' in #bot-spam
+2026-10-18 11:36:30 [SENT] [NightCrawler] Executed 'owo battle' in #bot-spam
+2026-10-18 11:36:35 [SENT] [GemFarmer] Executed 'owo hunt' in #owo-grind-main
+2026-10-18 11:36:39 [SENT] [OwoMaster] Executed 'owo hunt' in #owo-grind-main
+2026-10-18 11:36:43 [SENT] [NightCrawler] Executed 'owo lb all' in #bot-spam
+2026-10-18 11:36:47 [SENT] [GemFarmer] Executed 'owo lb all' in #owo-grind-main
+2026-10-18 11:36:51 [SENT] [NightCrawler] Executed 'owo battle' in #bot-spam
+2026-10-18 11:36:55 [SENT] [OwoMaster] Executed 'owo battle' in #owo-grind-main
+2026-10-18 11:36:59 [SENT] [GemFarmer] Executed 'owo battle' in #owo-grind-main
+2026-10-18 11:37:03 [SENT] [OwoMaster] Executed 'owo pray' in #owo-grind-main
+2026-10-18 11:37:07 [SENT] [OwoMaster] Executed 'owo battle' in #owo-grind-main
+2026-10-18 11:37:11 [SENT] [NightCrawler] Executed 'owo battle' in #bot-spam
+2026-10-18 11:37:15 [SENT] [GemFarmer] Executed 'owo hunt' in #owo-grind-main
+2026-10-18 11:37:19 [SENT] [NightCrawler] Executed 'owo pray' in #bot-spam
+2026-10-18 11:37:23 [SENT] [NightCrawler] Executed 'owo hunt' in #bot-spam
+2026-10-18 11:37:27 [SENT] [NightCrawler] Executed 'owo hunt' in #bot-spam
+2026-10-18 11:37:31 [SENT] [OwoMaster] Executed 'owo inv' in #owo-grind-main
+2026-10-18 11:37:35 [SENT] [NightCrawler] Executed 'owo pray' in #bot-spam
+2026-10-18 11:37:39 [SENT] [NightCrawler] Executed 'owo pray' in #bot-spam
+2026-10-18 11:37:43 [SENT] [OwoMaster] Executed 'owo pray' in #owo-grind-main
+2026-10-18 11:37:47 [SENT] [NightCrawler] Executed 'owo hunt' in #bot-spam
+2026-10-18 11:37:51 [SENT] [OwoMaster] Executed 'owo hunt' in #owo-grind-main
+2026-10-18 11:37:55 [SENT] [NightCrawler] Executed 'owo pray' in #bot-spam
+2026-10-18 11:37:59 [SENT] [GemFarmer] Executed 'owo inv' in #owo-grind-main
+2026-10-18 11:38:03 [SENT] [GemFarmer] Executed 'owo battle' in #owo-grind-main

@@ -32,6 +32,8 @@ export class DashboardState {
     private static instance: DashboardState;
 
     public accounts: Map<string, { client: ExtendedClient<true>; agent: BaseAgent; config: Configuration; startedAt: number }> = new Map();
+    public verifiedClients: Map<string, ExtendedClient<true>> = new Map();
+    public isRunning: boolean = false;
     public logs: LogEntry[] = [];
     private logCounter = 0;
     public sseClients: Set<http.ServerResponse> = new Set();
@@ -68,6 +70,7 @@ export class DashboardState {
             config,
             startedAt: Date.now()
         });
+        this.isRunning = true;
         this.sharedConfig = { ...config };
         this.broadcastStatus();
     }
@@ -120,6 +123,7 @@ export class DashboardState {
         }
 
         return {
+            isRunning: this.isRunning,
             totalAccounts: this.accounts.size,
             activeCount,
             totalCommands,
@@ -127,6 +131,17 @@ export class DashboardState {
             totalCaptchaFailed,
             globalUptime: Math.floor((Date.now() - this.startTime) / 1000)
         };
+    }
+
+    public stopAll() {
+        for (const [, item] of this.accounts.entries()) {
+            item.agent.farmLoopPaused = true;
+            item.agent.farmLoopRunning = false;
+        }
+        this.accounts.clear();
+        this.isRunning = false;
+        this.broadcastStatus();
+        logger.warn("[Dashboard] Stopped all farming accounts.");
     }
 
     public pauseAccount(id: string): boolean {
@@ -179,7 +194,7 @@ export class DashboardState {
 
     public addSseClient(res: http.ServerResponse) {
         this.sseClients.add(res);
-        res.write(`data: ${JSON.stringify({ type: "init", accounts: this.getAccountsInfo(), stats: this.getGlobalStats(), config: this.sharedConfig })}\n\n`);
+        res.write(`data: ${JSON.stringify({ type: "init", isRunning: this.isRunning, accounts: this.getAccountsInfo(), stats: this.getGlobalStats(), config: this.sharedConfig })}\n\n`);
     }
 
     public removeSseClient(res: http.ServerResponse) {
@@ -199,6 +214,7 @@ export class DashboardState {
 
     public broadcastStatus() {
         this.broadcast("status", {
+            isRunning: this.isRunning,
             accounts: this.getAccountsInfo(),
             stats: this.getGlobalStats(),
             config: this.sharedConfig

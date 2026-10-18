@@ -4,18 +4,14 @@ try {
 }
 catch { }
 import { UpdateFeature } from "./src/services/UpdateService.js";
-import { BaseAgent } from "./src/structure/BaseAgent.js";
 import { ExtendedClient } from "./src/structure/core/ExtendedClient.js";
-import { InquirerUI } from "./src/structure/InquirerUI.js";
 import { logger } from "./src/utils/logger.js";
-import { confirm } from "@inquirer/prompts";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import packageJSON from "./package.json" with { type: "json" };
+import { DashboardServer } from "./src/dashboard/DashboardServer.js";
 process.title = `Advanced Discord OwO Tool Farm v${packageJSON.version} - Copyright 2025 © Elysia x Kyou Izumi`;
 console.clear();
-import { DashboardServer } from "./src/dashboard/DashboardServer.js";
-import { ConfigPrompter } from "./src/structure/ConfigPrompter.js";
 const updateFeature = new UpdateFeature();
 const client = new ExtendedClient();
 const argv = await yargs(hideBin(process.argv))
@@ -23,6 +19,12 @@ const argv = await yargs(hideBin(process.argv))
     .usage("$0 <command> [options]")
     .commandDir("./src/cli", {
     extensions: ["ts", "js"],
+})
+    .option("port", {
+    alias: "p",
+    type: "number",
+    description: "Web Dashboard Port (default: 3000)",
+    default: process.env.PORT ? parseInt(process.env.PORT) : (process.env.SERVER_PORT ? parseInt(process.env.SERVER_PORT) : 3000),
 })
     .option("verbose", {
     alias: "v",
@@ -34,7 +36,7 @@ const argv = await yargs(hideBin(process.argv))
     alias: "s",
     type: "boolean",
     description: "Skip the update check",
-    default: false,
+    default: true,
 })
     .option("language", {
     alias: "l",
@@ -50,29 +52,20 @@ logger.setLevel(argv.verbose || process.env.NODE_ENV === "development" ? "debug"
 process.env.LOCALE = argv.language || "en";
 if (!argv._.length) {
     if (!argv.skipCheckUpdate) {
-        const updateAvailable = await updateFeature.checkForUpdates();
-        if (updateAvailable) {
-            const shouldUpdate = await confirm({
-                message: "An update is available. Do you want to update now?",
-                default: true,
-            });
-            if (shouldUpdate) {
-                await updateFeature.performUpdate();
-            }
+        try {
+            await updateFeature.checkForUpdates();
         }
-        await client.sleep(1000); // Wait for update to complete
+        catch { }
     }
-    // 1. Ask for Red Dashboard Port first!
-    const prompter = new ConfigPrompter({ client, getConfig: () => ({}) });
-    const port = await prompter.getDashboardPort();
-    // Start Red Theme Professional Dashboard Server on requested port
+    // Launch Red Theme Professional Dashboard Web Controller directly
+    const port = argv.port || (process.env.PORT ? parseInt(process.env.PORT) : (process.env.SERVER_PORT ? parseInt(process.env.SERVER_PORT) : 3000));
     const dashboardServer = new DashboardServer(port);
-    await dashboardServer.start();
-    logger.info(`🔴 Red Theme Professional Dashboard online at http://localhost:${port}`);
-    // 2. Prompt for 3 tokens, verify them, and configure single unified settings
-    const { accounts } = await InquirerUI.prompt(client);
-    logger.info(`⚡ Starting concurrent farming loop for ${accounts.length} account(s)...`);
-    for (const acc of accounts) {
-        await BaseAgent.initialize(acc.client, acc.config);
-    }
+    const actualPort = await dashboardServer.start();
+    console.log(`\n========================================================================`);
+    console.log(`🔴 TRUSTED OWO GEN V4 - WEB DASHBOARD CONTROLLER IS RUNNING`);
+    console.log(`========================================================================`);
+    console.log(`🌐 Control Panel URL: http://localhost:${actualPort}`);
+    console.log(`👉 Open the URL in your browser to enter tokens and configure all accounts!`);
+    console.log(`💡 Zero terminal interaction required — everything is handled in the Web UI.`);
+    console.log(`========================================================================\n`);
 }

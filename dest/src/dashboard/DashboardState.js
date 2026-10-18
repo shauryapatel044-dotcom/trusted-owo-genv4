@@ -2,6 +2,8 @@ import { logger } from "../utils/logger.js";
 export class DashboardState {
     static instance;
     accounts = new Map();
+    verifiedClients = new Map();
+    isRunning = false;
     logs = [];
     logCounter = 0;
     sseClients = new Set();
@@ -35,6 +37,7 @@ export class DashboardState {
             config,
             startedAt: Date.now()
         });
+        this.isRunning = true;
         this.sharedConfig = { ...config };
         this.broadcastStatus();
     }
@@ -84,6 +87,7 @@ export class DashboardState {
             }
         }
         return {
+            isRunning: this.isRunning,
             totalAccounts: this.accounts.size,
             activeCount,
             totalCommands,
@@ -91,6 +95,16 @@ export class DashboardState {
             totalCaptchaFailed,
             globalUptime: Math.floor((Date.now() - this.startTime) / 1000)
         };
+    }
+    stopAll() {
+        for (const [, item] of this.accounts.entries()) {
+            item.agent.farmLoopPaused = true;
+            item.agent.farmLoopRunning = false;
+        }
+        this.accounts.clear();
+        this.isRunning = false;
+        this.broadcastStatus();
+        logger.warn("[Dashboard] Stopped all farming accounts.");
     }
     pauseAccount(id) {
         const acc = this.accounts.get(id);
@@ -137,7 +151,7 @@ export class DashboardState {
     }
     addSseClient(res) {
         this.sseClients.add(res);
-        res.write(`data: ${JSON.stringify({ type: "init", accounts: this.getAccountsInfo(), stats: this.getGlobalStats(), config: this.sharedConfig })}\n\n`);
+        res.write(`data: ${JSON.stringify({ type: "init", isRunning: this.isRunning, accounts: this.getAccountsInfo(), stats: this.getGlobalStats(), config: this.sharedConfig })}\n\n`);
     }
     removeSseClient(res) {
         this.sseClients.delete(res);
@@ -155,6 +169,7 @@ export class DashboardState {
     }
     broadcastStatus() {
         this.broadcast("status", {
+            isRunning: this.isRunning,
             accounts: this.getAccountsInfo(),
             stats: this.getGlobalStats(),
             config: this.sharedConfig

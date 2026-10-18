@@ -26,25 +26,27 @@ Trusted OwO Gen V4 is completely redesigned for power users who want to run **mu
 
 ---
 
-## 🚀 Interactive Startup Sequence
+## 🚀 100% Web-First Setup & Launch Sequence
 
-When you launch the tool, you are guided through a streamlined 3-step setup:
+No terminal inputs required! Starting `node index.js` immediately boots the web controller:
 
 ```
-[1] 🔴 Enter Dashboard Port (default: 3000)
-    ↳ Boots the Red Web Dashboard on the chosen port (or auto-assigned VPS port).
-
-[2] ⚡ Multi-Token Setup (Up to 3 Accounts)
-    ↳ [Account 1/3] Enter Discord Token: (validates connection)
-    ↳ [Account 2/3] Enter Discord Token: (or press Enter to skip)
-    ↳ [Account 3/3] Enter Discord Token: (or press Enter to skip)
-
-[3] ⚙️ 1-Time Unified Configuration
-    ↳ Select Discord Server (Guild) & Target Channel(s)
-    ↳ Toggle Features (Huntbot, Battle, Pray, Cookie, Clover, Sleep, Lootbox)
-    ↳ Configure Captcha Solver & Discord Webhook Alerts
-    ↳ [Auto-Apply] All accounts inherit settings and start farming concurrently!
+$ node index.js
+========================================================================
+🔴 TRUSTED OWO GEN V4 - WEB DASHBOARD CONTROLLER IS RUNNING
+========================================================================
+🌐 Control Panel URL: http://localhost:3000 (or http://<VPS_IP>:3000)
+👉 Open the URL in your browser to enter tokens and configure all accounts!
+💡 Zero terminal interaction required — everything is handled in the Web UI.
+========================================================================
 ```
+
+### 🌐 Inside the Web Dashboard (`http://localhost:3000`):
+1. **⚡ Enter Tokens (Up to 3 Accounts)**: Paste Discord tokens directly into the web interface with show/hide password toggles. Click **"🔍 Verify Tokens"** to validate sessions and retrieve user tags and mutual servers.
+2. **🎯 Server & Channel Selector**: Choose your target server and channel(s) from auto-populated dropdowns (or switch to manual ID input).
+3. **⚙️ Unified 1-Time Config**: Toggle Huntbot, Battle, Pray, Daily, Cookie, Clover, Lootbox, Sleep, and Captcha Solvers with glowing neon switches.
+4. **🚀 Launch**: Click **"LAUNCH MULTI-TOKEN CONCURRENT FARMING ENGINE"** — all accounts start farming simultaneously, and the UI transitions smoothly into the live multi-page dashboard!
+5. **⚡ Quick Load Saved**: If you previously configured accounts, click **"Quick Load Saved"** to prefill all tokens and settings with a single click.
 
 ---
 
