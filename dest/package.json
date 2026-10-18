@@ -13,6 +13,8 @@
         "setup": "npm install",
         "start": "npx tsx index.ts",
         "start:js": "node dest/index.js",
+        "panel": "npx tsx src/dashboard/test-server.ts",
+        "panel:js": "node dest/src/dashboard/test-server.js",
         "dev": "cross-env NODE_ENV=development npx tsx ."
     },
     "repository": {
