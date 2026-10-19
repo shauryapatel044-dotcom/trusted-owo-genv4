@@ -74,7 +74,7 @@ export class CaptchaService {
         }
     }
 
-    public solveImageCaptcha = async (attachmentUrl: string): Promise<string> => {
+    public solveImageCaptcha = async (attachmentUrl: string, options?: import("@/typings/index.js").SolveImageOptions): Promise<string> => {
         if (!this.solver) {
             throw new Error("Captcha solver is not configured.");
         }
@@ -82,7 +82,7 @@ export class CaptchaService {
         logger.debug(`Downloading captcha image from ${attachmentUrl}`);
         const imageBuffer = await downloadAttachment(attachmentUrl);
 
-        const solution = await this.solver.solveImage(imageBuffer);
+        const solution = await this.solver.solveImage(imageBuffer, options);
         logger.debug(`Captcha solution: ${solution}`);
 
         return solution;

@@ -14,13 +14,21 @@ import type { I18nPath, Locale, Translationfn } from "@/utils/locales.ts";
 
 export type MaybePromise<T> = T | Promise<T>;
 
+export interface SolveImageOptions {
+    expectedLength?: number;
+    minLength?: number;
+    maxLength?: number;
+    context?: string;
+}
+
 export interface CaptchaSolver {
     /**
      * Solves an image captcha from a buffer.
      * @param imageData The image data as a Buffer.
+     * @param options Optional options including expected character length.
      * @returns A promise that resolves with the captcha solution text.
      */
-    solveImage(imageData: Buffer): Promise<string>;
+    solveImage(imageData: Buffer, options?: SolveImageOptions): Promise<string>;
 
     /**
      * Solves an hCaptcha challenge.

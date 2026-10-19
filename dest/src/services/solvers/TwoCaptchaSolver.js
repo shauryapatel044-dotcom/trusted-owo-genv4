@@ -4,11 +4,11 @@ export class TwoCaptchaSolver {
     constructor(apiKey) {
         this.solver = new Solver(apiKey);
     }
-    solveImage = async (imageData) => {
+    solveImage = async (imageData, options) => {
         const result = await this.solver.imageCaptcha(imageData.toString("base64"), {
             numeric: 2,
-            min_len: 3,
-            max_len: 6,
+            min_len: options?.expectedLength || options?.minLength || 3,
+            max_len: options?.expectedLength || options?.maxLength || 6,
         });
         return result.data;
     };

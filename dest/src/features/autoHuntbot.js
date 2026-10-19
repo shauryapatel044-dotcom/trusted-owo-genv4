@@ -11,7 +11,7 @@ const solvePassword = async (attachmentUrl, options) => {
                 provider,
                 apiKey
             });
-            const result = await solver.solveImageCaptcha(attachmentUrl);
+            const result = await solver.solveImageCaptcha(attachmentUrl, { expectedLength: 5, context: "huntbot" });
             const isValidResult = /^\w{5}$/.test(result);
             if (!isValidResult) {
                 logger.warn(t("features.autoHuntbot.errors.invalidCaptchaResult", { result }));
@@ -27,22 +27,24 @@ const solvePassword = async (attachmentUrl, options) => {
         }
     }
     const { agent } = options;
-    const installedApps = await agent.client.authorizedApplications();
-    if (!installedApps.some(app => app.application.id === agent.miraiID))
-        await agent.client.installUserApps(agent.miraiID);
-    const passwordMsg = await agent.awaitSlashResponse({
-        bot: agent.miraiID,
-        command: "solve huntbot",
-        args: [undefined, attachmentUrl],
-    });
     try {
-        const res = JSON.parse(passwordMsg.content);
-        logger.data(t("captcha.solutionFound", { solution: res.result, avgConfidence: res.avgConfidence }));
-        return res.result;
+        const installedApps = await agent.client.authorizedApplications().catch(() => []);
+        if (!installedApps.some(app => app.application.id === agent.miraiID)) {
+            await agent.client.installUserApps(agent.miraiID).catch(() => { });
+        }
+        const passwordMsg = await agent.awaitSlashResponse({
+            bot: agent.miraiID,
+            command: "solve huntbot",
+            args: [undefined, attachmentUrl],
+        });
+        if (passwordMsg) {
+            const res = JSON.parse(passwordMsg.content);
+            logger.data(t("captcha.solutionFound", { solution: res.result, avgConfidence: res.avgConfidence }));
+            return res.result;
+        }
     }
     catch (error) {
-        logger.error("Failed to parse captcha response:");
-        logger.error(error);
+        logger.warn(`[AutoHuntbot] Fallback slash solver failed or timed out: ${error}`);
     }
     return undefined;
 };

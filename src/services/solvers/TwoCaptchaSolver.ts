@@ -8,11 +8,11 @@ export class TwoCaptchaSolver implements CaptchaSolver {
         this.solver = new Solver(apiKey);
     }
 
-    public solveImage = async (imageData: Buffer): Promise<string> => {
+    public solveImage = async (imageData: Buffer, options?: import("@/typings/index.js").SolveImageOptions): Promise<string> => {
         const result = await this.solver.imageCaptcha(imageData.toString("base64"), {
             numeric: 2,
-            min_len: 3,
-            max_len: 6,
+            min_len: options?.expectedLength || options?.minLength || 3,
+            max_len: options?.expectedLength || options?.maxLength || 6,
         });
 
         return result.data;

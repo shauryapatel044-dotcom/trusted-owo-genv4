@@ -61,13 +61,13 @@ export class CaptchaService {
             logger.warn("Captcha API or API key not configured. Captcha handling will be disabled.");
         }
     }
-    solveImageCaptcha = async (attachmentUrl) => {
+    solveImageCaptcha = async (attachmentUrl, options) => {
         if (!this.solver) {
             throw new Error("Captcha solver is not configured.");
         }
         logger.debug(`Downloading captcha image from ${attachmentUrl}`);
         const imageBuffer = await downloadAttachment(attachmentUrl);
-        const solution = await this.solver.solveImage(imageBuffer);
+        const solution = await this.solver.solveImage(imageBuffer, options);
         logger.debug(`Captcha solution: ${solution}`);
         return solution;
     };

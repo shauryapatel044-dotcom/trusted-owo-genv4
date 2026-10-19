@@ -1,4 +1,4 @@
-import { CaptchaSolver } from "@/typings/index.js";
+import { CaptchaSolver, SolveImageOptions } from "@/typings/index.js";
 import { logger } from "@/utils/logger.js";
 import axios from "axios";
 
@@ -12,7 +12,7 @@ export class GeminiCaptchaSolver implements CaptchaSolver {
         this.model = model;
     }
 
-    public solveImage = async (imageData: Buffer): Promise<string> => {
+    public solveImage = async (imageData: Buffer, options?: SolveImageOptions): Promise<string> => {
         const base64Data = imageData.toString("base64");
 
         // Flash-tier models in order of priority: 3.5-flash-lite -> flash-lite-latest -> 2.5-flash
@@ -21,6 +21,12 @@ export class GeminiCaptchaSolver implements CaptchaSolver {
             "gemini-flash-lite-latest",
             "gemini-2.5-flash"
         ];
+
+        const expectedLen = options?.expectedLength;
+
+        const mainPrompt = expectedLen
+            ? `You are an expert OCR engine solving a distorted captcha.\nCRITICAL: This captcha contains EXACTLY ${expectedLen} alphanumeric characters (letters and/or digits).\nCarefully examine the characters from left to right. Do NOT mistake background noise, specks, or border lines for characters.\nOutput ONLY the exact ${expectedLen} characters without spaces, punctuation, quotes, or markdown. Maintain original letter casing.`
+            : `You are an expert OCR engine solving a distorted captcha. Read the characters (letters and/or digits) in this image.\nOutput ONLY the exact characters without spaces, punctuation, quotes, or markdown. Maintain original letter casing.`;
 
         let lastError: any = null;
 
@@ -35,9 +41,7 @@ export class GeminiCaptchaSolver implements CaptchaSolver {
                             {
                                 role: "user",
                                 parts: [
-                                    {
-                                        text: "You are an OCR engine specialized in solving distorted captchas. Read the characters (letters and/or numbers) in this captcha image. Output ONLY the exact characters without spaces, without punctuation, without markdown, without any quotes, and without explanation. Maintain original letter casing."
-                                    },
+                                    { text: mainPrompt },
                                     {
                                         inlineData: {
                                             mimeType: "image/png",
@@ -48,8 +52,8 @@ export class GeminiCaptchaSolver implements CaptchaSolver {
                             }
                         ],
                         generationConfig: {
-                            temperature: 0.1,
-                            maxOutputTokens: 25
+                            temperature: 0.0,
+                            maxOutputTokens: 20
                         }
                     },
                     {
@@ -65,7 +69,62 @@ export class GeminiCaptchaSolver implements CaptchaSolver {
                 const textPart = candidate?.content?.parts?.find((p: any) => p.text)?.text;
 
                 if (textPart && typeof textPart === "string") {
-                    const cleaned = textPart.trim().replace(/[\r\n\t]/g, "").replace(/[^a-zA-Z0-9]/g, "");
+                    let cleaned = textPart.trim().replace(/[\r\n\t]/g, "").replace(/[^a-zA-Z0-9]/g, "");
+
+                    // If expected length was specified but Gemini returned extra characters due to noise
+                    if (expectedLen && cleaned.length > expectedLen) {
+                        try {
+                            const correctionResponse = await axios.post(
+                                endpoint,
+                                {
+                                    contents: [
+                                        {
+                                            role: "user",
+                                            parts: [
+                                                {
+                                                    text: `You previously output "${cleaned}" (${cleaned.length} chars). However, this captcha has EXACTLY ${expectedLen} characters. One of the characters was an artifact or background noise line. Inspect the image again and return ONLY the true ${expectedLen} characters.`
+                                                },
+                                                {
+                                                    inlineData: {
+                                                        mimeType: "image/png",
+                                                        data: base64Data
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    generationConfig: {
+                                        temperature: 0.0,
+                                        maxOutputTokens: 15
+                                    }
+                                },
+                                {
+                                    headers: {
+                                        "Content-Type": "application/json",
+                                        "x-goog-api-key": this.apiKey
+                                    },
+                                    timeout: 10000
+                                }
+                            );
+
+                            const fixText = correctionResponse.data?.candidates?.[0]?.content?.parts?.find((p: any) => p.text)?.text;
+                            if (fixText) {
+                                const fixCleaned = fixText.trim().replace(/[^a-zA-Z0-9]/g, "");
+                                if (fixCleaned.length === expectedLen) {
+                                    logger.info(`🤖 [Gemini Vision AI] Corrected captcha length from ${cleaned.length} to ${fixCleaned.length}: "${fixCleaned}"`);
+                                    return fixCleaned;
+                                }
+                            }
+                        } catch {
+                            // Fallback to slicing if correction pass times out
+                        }
+
+                        // Slice to expectedLen if still longer
+                        const sliced = cleaned.slice(0, expectedLen);
+                        logger.warn(`🤖 [Gemini Vision AI] Adjusted ${cleaned} to expected ${expectedLen} characters: "${sliced}"`);
+                        return sliced;
+                    }
+
                     if (cleaned.length >= 2) {
                         logger.info(`🤖 [Gemini Vision AI] Captcha solved via ${model}: "${cleaned}"`);
                         return cleaned;

@@ -32,7 +32,7 @@ export class YesCaptchaSolver {
             // Continue polling if status is "processing"
         }
     }
-    async solveImage(imageData) {
+    async solveImage(imageData, _options) {
         const { data } = await this.createTask({
             type: "ImageToTextTaskM1",
             body: imageData.toString("base64"),

@@ -84,7 +84,7 @@ export class YesCaptchaSolver implements CaptchaSolver {
         }
     }
 
-    public async solveImage(imageData: Buffer): Promise<string> {
+    public async solveImage(imageData: Buffer, _options?: import("@/typings/index.js").SolveImageOptions): Promise<string> {
         const { data } = await this.createTask({
             type: "ImageToTextTaskM1",
             body: imageData.toString("base64"),
