@@ -1,0 +1,82 @@
+{
+  "tokens": [
+    "PASTE_DISCORD_TOKEN_1_HERE",
+    "PASTE_DISCORD_TOKEN_2_HERE",
+    "PASTE_DISCORD_TOKEN_3_HERE",
+    "PASTE_DISCORD_TOKEN_4_HERE",
+    "PASTE_DISCORD_TOKEN_5_HERE",
+    "PASTE_DISCORD_TOKEN_6_HERE",
+    "PASTE_DISCORD_TOKEN_7_HERE",
+    "PASTE_DISCORD_TOKEN_8_HERE",
+    "PASTE_DISCORD_TOKEN_9_HERE",
+    "PASTE_DISCORD_TOKEN_10_HERE"
+  ],
+  "config": {
+    "guildID": "PASTE_YOUR_DISCORD_SERVER_ID_HERE",
+    "channelID": [
+      "PASTE_YOUR_CHANNEL_ID_1_HERE",
+      "PASTE_YOUR_CHANNEL_ID_2_HERE"
+    ],
+    "adminID": "PASTE_YOUR_MAIN_DISCORD_USER_ID_HERE",
+    "webhookURL": "https://discord.com/api/webhooks/YOUR_WEBHOOK_URL_HERE",
+    "captchaAPI": "2captcha",
+    "apiKey": "OPTIONAL_2CAPTCHA_API_KEY_HERE",
+    
+    "autoHuntbot": true,
+    "autoBattle": true,
+    "autoDaily": true,
+    "autoSleep": true,
+    "sleepCommandsThreshold": 100,
+    "sleepDurationMinutes": 10,
+    
+    "typingSpeedMode": "balanced",
+    "humanizeDistraction": true,
+    
+    "nightMode": true,
+    "nightStartHour": 22,
+    "nightEndHour": 7,
+    
+    "autoQuest": true,
+    "questCheckInterval": 30,
+    "questMaxMicroBets": 5,
+    
+    "autoCrate": true,
+    "crateCheckInterval": 20,
+    "autoLootbox": true,
+    "autoFabledLootbox": false,
+    
+    "autoCookie": true,
+    "autoClover": true,
+    "autoSell": true,
+    "autoCash": true,
+    "autoEquip": true,
+    
+    "autoGem": 1,
+    "gemTier": [
+      "common",
+      "uncommon",
+      "rare",
+      "epic",
+      "mythical",
+      "legendary",
+      "fabled"
+    ],
+    "useSpecialGem": false,
+    
+    "autoTrait": "efficiency",
+    "autoPray": [
+      "pray"
+    ],
+    "autoQuote": [
+      "owo"
+    ],
+    "autoRPP": [
+      "run",
+      "pup",
+      "piku"
+    ],
+    "wayNotify": [
+      "webhook"
+    ]
+  }
+}
