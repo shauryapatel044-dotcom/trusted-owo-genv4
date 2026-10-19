@@ -507,6 +507,43 @@ export class BaseAgent {
         if (this.config.showRPC) this.loadPresence();
     }
 
+    public syncBalance = async (): Promise<number | undefined> => {
+        if (!this.activeChannel) return undefined;
+        try {
+            const cashMsg = await this.awaitResponse({
+                trigger: () => this.send("cash"),
+                filter: (m) => m.author.id === this.owoID
+                    && (
+                        m.content.includes(this.client.user?.id!)
+                        || (this.client.user?.username && m.content.toLowerCase().includes(this.client.user.username.toLowerCase()))
+                        || (this.client.user?.displayName && m.content.toLowerCase().includes(this.client.user.displayName.toLowerCase()))
+                        || (m.guild?.members.me?.displayName && m.content.toLowerCase().includes(m.guild.members.me.displayName.toLowerCase()))
+                        || /cowoncy|currently have/i.test(m.content)
+                    ),
+                time: 15_000,
+                expectResponse: false
+            });
+
+            if (cashMsg) {
+                const embedContent = (cashMsg.embeds || []).map(e => `${e.title || ""} ${e.description || ""} ${e.fields?.map(f => `${f.name} ${f.value}`).join(" ") || ""}`).join(" ");
+                const clean = (cashMsg.content + " " + embedContent).replace(/[*_`]/g, "").replace(/<a?:[a-zA-Z0-9_]+:\d+>/g, " ");
+                const match = clean.match(/(?:you\s+(?:currently\s+|now\s+)?have|balance\s*:?|cowoncy\s*:?)\s*([0-9,]+)/i);
+                if (match) {
+                    const amount = parseInt(match[1].replace(/,/g, ""), 10);
+                    if (!isNaN(amount) && amount >= 0) {
+                        this.cowoncy = amount;
+                        logger.info(`💰 [Balance Audit] Initial balance for ${this.client.user?.username}: ${amount.toLocaleString()} Cowoncy`);
+                        dashboardState.broadcastStatus();
+                        return amount;
+                    }
+                }
+            }
+        } catch (err) {
+            logger.debug(`[Balance Audit] Initial balance check skipped: ${err}`);
+        }
+        return undefined;
+    }
+
     public static initialize = async (client: ExtendedClient<true>, config: Configuration) => {
         logger.debug("Initializing BaseAgent...");
         if (!client.isReady()) {
@@ -527,6 +564,12 @@ export class BaseAgent {
         setTimeout(() => {
             agent.farmLoop();
         }, agent.jitterOffset);
+
+        // Immediate proactive balance audit on startup (staggered by 3s to not collide with initial command)
+        setTimeout(() => {
+            agent.syncBalance().catch(() => {});
+        }, agent.jitterOffset + 3500);
+
         return agent;
     }
 }

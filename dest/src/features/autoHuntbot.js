@@ -156,7 +156,7 @@ export default Schematic.registerFeature({
         if (!attachmentUrl)
             return;
         let password;
-        if (agent.config.captchaAPI && agent.config.apiKey && !agent.config.useAdotfAPI) {
+        if (agent.config.captchaAPI && agent.config.apiKey) {
             password = await solvePassword(attachmentUrl, {
                 provider: agent.config.captchaAPI,
                 apiKey: agent.config.apiKey
