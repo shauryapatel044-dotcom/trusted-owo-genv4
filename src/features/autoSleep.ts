@@ -10,17 +10,20 @@ export default Schematic.registerFeature({
     condition: async ({ agent }) => {
         if (!agent.config.autoSleep) return false;
 
+        const targetThreshold = agent.config.sleepCommandsThreshold || 100;
         const commandsSinceLastSleep = agent.totalCommands - agent.lastSleepAt;
-        return commandsSinceLastSleep >= agent.autoSleepThreshold;
+        return commandsSinceLastSleep >= (agent.autoSleepThreshold || targetThreshold);
     },
     run: async ({ agent }) => {
         const commandsSinceLastSleep = agent.totalCommands - agent.lastSleepAt;
+        const breakMinutes = agent.config.sleepDurationMinutes || 10;
 
-        // Break duration: Exactly 10 minutes with subtle human jitter (~9m 50s to 10m 15s)
-        const sleepTime = (10 * 60 * 1000) + ranInt(-10000, 15000);
+        // Break duration customizable (default 10 mins with human jitter)
+        const sleepTime = Math.max(60 * 1000, (breakMinutes * 60 * 1000) + ranInt(-10000, 15000));
 
-        // Next threshold jittered around 100 commands (98 to 103)
-        const nextThreshold = ranInt(98, 103);
+        // Threshold customizable (default ~100 commands with human jitter)
+        const targetThreshold = agent.config.sleepCommandsThreshold || 100;
+        const nextThreshold = ranInt(Math.max(10, targetThreshold - 3), targetThreshold + 3);
         agent.lastSleepAt = agent.totalCommands;
         agent.autoSleepThreshold = nextThreshold;
         agent.breakUntil = Date.now() + sleepTime;
@@ -28,8 +31,8 @@ export default Schematic.registerFeature({
         const resumeDate = new Date(agent.breakUntil);
         const resumeTimeStr = resumeDate.toLocaleTimeString();
 
-        logger.info(`☕ [10m Break] Account ${agent.client.user?.username} completed ${commandsSinceLastSleep} commands! Taking a 10-minute break to ensure 100% human stealth.`);
-        logger.info(`⏳ [10m Break] Account ${agent.client.user?.username} will resume 24/7 farming at ${resumeTimeStr} (Next break after ~${nextThreshold} commands).`);
+        logger.info(`☕ [Rest Break] Account ${agent.client.user?.username} completed ${commandsSinceLastSleep} commands! Taking a ${breakMinutes}-minute break for human stealth.`);
+        logger.info(`⏳ [Rest Break] Account ${agent.client.user?.username} will resume 24/7 farming at ${resumeTimeStr} (Next break after ~${nextThreshold} commands).`);
 
         dashboardState.broadcastStatus();
 
@@ -38,7 +41,7 @@ export default Schematic.registerFeature({
         agent.breakUntil = 0;
         dashboardState.broadcastStatus();
 
-        logger.info(`⚡ [10m Break] Account ${agent.client.user?.username} 10-minute break completed! Resuming 24/7 farming loop immediately.`);
+        logger.info(`⚡ [Rest Break] Account ${agent.client.user?.username} finished break! Resuming 24/7 farming loop immediately.`);
 
         return 30 * 1000;
     }

@@ -79,7 +79,8 @@ export default Schematic.registerFeature({
                 }
 
                 if (needed > 0) {
-                    const toExecute = Math.min(needed, 5);
+                    const maxBets = agent.config.questMaxMicroBets || 5;
+                    const toExecute = Math.min(needed, maxBets);
                     logger.info(`🎲 [Quest Solver] Auto-completing gamble quest for ${agent.client.user?.username} (${toExecute} micro-bets of 1 cowoncy)...`);
                     for (let i = 0; i < toExecute; i++) {
                         await agent.client.sleep(ranInt(3500, 6000));
@@ -100,7 +101,8 @@ export default Schematic.registerFeature({
                 }
 
                 if (needed > 0) {
-                    const toExecute = Math.min(needed, 5);
+                    const maxBets = agent.config.questMaxMicroBets || 5;
+                    const toExecute = Math.min(needed, maxBets);
                     logger.info(`🎰 [Quest Solver] Auto-completing slots quest for ${agent.client.user?.username} (${toExecute} micro-bets of 1 cowoncy)...`);
                     for (let i = 0; i < toExecute; i++) {
                         await agent.client.sleep(ranInt(3500, 6000));

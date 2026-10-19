@@ -24,6 +24,7 @@ export default Schematic.registerFeature({
             await agent.client.sleep(ranInt(3500, 6000));
         }
         logger.info(`📦 [Loot] Auto-opened crates & lootboxes for ${agent.client.user?.username}`);
-        return ranInt(15 * 60 * 1000, 30 * 60 * 1000);
+        const intervalMins = agent.config.crateCheckInterval || 20;
+        return Math.max(5 * 60 * 1000, (intervalMins * 60 * 1000) + ranInt(-60000, 60000));
     }
 });

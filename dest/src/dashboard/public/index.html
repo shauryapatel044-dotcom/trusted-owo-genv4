@@ -778,7 +778,8 @@
             <!-- Navigation Tabs -->
             <div class="nav-tabs">
                 <button class="nav-tab active" onclick="switchTab('overview')">📊 Overview</button>
-                <button class="nav-tab" onclick="switchTab('accounts')">👥 3 Accounts</button>
+                <button class="nav-tab" onclick="switchTab('accounts')">👥 10 Accounts</button>
+                <button class="nav-tab" onclick="switchTab('customize')">🎨 Customize</button>
                 <button class="nav-tab" onclick="switchTab('terminal')">💻 Live Terminal</button>
                 <button class="nav-tab" onclick="switchTab('config')">⚙️ Shared Config</button>
                 <button class="nav-tab" onclick="switchTab('safety')">🛡️ Safety & Captcha</button>
@@ -805,7 +806,7 @@
             <div class="kpi-grid">
                 <div class="kpi-card">
                     <div class="kpi-label">Active Bots</div>
-                    <div class="kpi-val"><span id="stat-active">0</span> <span style="font-size: 15px; color: var(--text-dim);">/ 3</span></div>
+                    <div class="kpi-val"><span id="stat-active">0</span> <span style="font-size: 15px; color: var(--text-dim);">/ 10</span></div>
                     <div class="kpi-sub">🟢 Concurrently Running</div>
                 </div>
 
@@ -948,11 +949,11 @@
         </div>
 
         <!-- ========================================================================= -->
-        <!-- 👥 TAB 2: 3 ACCOUNTS ROSTER                                              -->
+        <!-- 👥 TAB 2: 10 ACCOUNTS ROSTER                                             -->
         <!-- ========================================================================= -->
         <div id="tab-accounts" class="tab-content">
             <div class="glass-card">
-                <h2 style="font-size: 16px; font-weight: 800; margin-bottom: 16px;">👥 Multi-Token Accounts Roster</h2>
+                <h2 style="font-size: 16px; font-weight: 800; margin-bottom: 16px;">👥 Multi-Token Accounts Roster (10 Slots)</h2>
                 <div class="table-container">
                     <table>
                         <thead>
@@ -1012,12 +1013,12 @@
             <div class="glass-card">
                 <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
                     <div>
-                        <h2 style="font-size: 17px; font-weight: 800; color: white;">⚙️ 1-Time Config Editor (Applies to All 3 Accounts)</h2>
+                        <h2 style="font-size: 17px; font-weight: 800; color: white;">⚙️ 1-Time Config Editor (Applies to All 10 Accounts)</h2>
                         <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
                             Change any feature below and click save. The configuration is automatically applied to all running tokens simultaneously.
                         </p>
                     </div>
-                    <button class="btn btn-primary" onclick="saveConfig()">💾 Save & Apply to All 3 Accounts</button>
+                    <button class="btn btn-primary" onclick="saveConfig()">💾 Save & Apply to All 10 Accounts</button>
                 </div>
 
                 <!-- Section: Core Farming -->
@@ -1159,13 +1160,151 @@
                 </div>
 
                 <div style="margin-top: 20px;">
-                    <button class="btn btn-primary" onclick="saveConfig()">💾 Save & Apply to All 3 Accounts</button>
+                    <button class="btn btn-primary" onclick="saveConfig()">💾 Save & Apply to All 10 Accounts</button>
                 </div>
             </div>
         </div>
 
         <!-- ========================================================================= -->
-        <!-- 🛡️ TAB 5: SAFETY & ANTI-BAN                                             -->
+        <!-- 🎨 TAB 5: CUSTOMIZE ALL FEATURES (FINE-GRAINED SETTINGS)                 -->
+        <!-- ========================================================================= -->
+        <div id="tab-customize" class="tab-content">
+            <div class="glass-card">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+                    <div>
+                        <h2 style="font-size: 18px; font-weight: 800; color: white;">🎨 Master Feature Customizer (All 10 Accounts)</h2>
+                        <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                            Fine-tune exact command thresholds, rest durations, micro-bet limits, gem tiers, and human typing latency for your 10-token farm.
+                        </p>
+                    </div>
+                    <button class="btn btn-primary" onclick="saveCustomizeConfig()">💾 Save Customizations to All 10 Accounts</button>
+                </div>
+
+                <!-- Section 1: Break & Anti-Ban Human Rest Customization -->
+                <div class="section-header">☕ 10-Minute Break & Human Rest Engine</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 10px; margin-bottom: 20px;">
+                    <div class="input-group">
+                        <label class="input-label">Commands Before Break (Default: 100):</label>
+                        <input id="cust-sleepCommandsThreshold" type="number" min="20" max="1000" class="input-field" placeholder="100" />
+                        <span style="font-size: 11px; color: var(--text-dim); margin-top: 3px;">Triggers a stealth break per account once this many commands are sent (±3 human jitter).</span>
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label">Break Duration in Minutes (Default: 10):</label>
+                        <input id="cust-sleepDurationMinutes" type="number" min="1" max="120" class="input-field" placeholder="10" />
+                        <span style="font-size: 11px; color: var(--text-dim); margin-top: 3px;">How long the account pauses before automatically resuming 24/7 farming.</span>
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label">Human Typing Simulation Mode:</label>
+                        <select id="cust-typingSpeedMode" class="input-field">
+                            <option value="fast">⚡ Fast Latency (500ms - 1000ms)</option>
+                            <option value="balanced" selected>🧠 Balanced Human (850ms - 1800ms + text length)</option>
+                            <option value="stealth">🛡️ Ultra-Stealth Gamer (1400ms - 3200ms)</option>
+                        </select>
+                        <span style="font-size: 11px; color: var(--text-dim); margin-top: 3px;">Includes human reaction pauses and dynamic character-count typing simulation.</span>
+                    </div>
+                </div>
+
+                <!-- Section 2: Auto-Quest Solver Settings -->
+                <div class="section-header">📜 Auto-Quest Solver Customization</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 10px; margin-bottom: 20px;">
+                    <div class="input-group">
+                        <label class="input-label">Quest Check Interval (Minutes):</label>
+                        <input id="cust-questCheckInterval" type="number" min="10" max="180" class="input-field" placeholder="30" />
+                        <span style="font-size: 11px; color: var(--text-dim); margin-top: 3px;">How often each token runs /owo quest to inspect active quests.</span>
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label">Max Micro-Bets (cf 1 / s 1) Per Cycle:</label>
+                        <input id="cust-questMaxMicroBets" type="number" min="1" max="20" class="input-field" placeholder="5" />
+                        <span style="font-size: 11px; color: var(--text-dim); margin-top: 3px;">Strict 1-cowoncy micro-bets to fulfill gamble & slots quests with 100% stop-loss safety.</span>
+                    </div>
+                </div>
+
+                <!-- Section 3: Crates, Lootboxes & Daily -->
+                <div class="section-header">📦 Crates, Lootboxes & 24/7 Daily Streak</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 10px; margin-bottom: 20px;">
+                    <div class="input-group">
+                        <label class="input-label">Crate & Box Check Interval (Minutes):</label>
+                        <input id="cust-crateCheckInterval" type="number" min="5" max="180" class="input-field" placeholder="20" />
+                        <span style="font-size: 11px; color: var(--text-dim); margin-top: 3px;">Frequency of running /owo crate all & /owo lb all.</span>
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label">Open Fabled Lootboxes (Rare):</label>
+                        <select id="cust-autoFabledLootbox" class="input-field">
+                            <option value="false">❌ Keep Fabled Boxes in Inventory</option>
+                            <option value="true">✅ Auto-Open Fabled Lootboxes (lb fabled)</option>
+                        </select>
+                        <span style="font-size: 11px; color: var(--text-dim); margin-top: 3px;">Whether to unpack ultra-rare Fabled Lootboxes automatically.</span>
+                    </div>
+                </div>
+
+                <!-- Section 4: Gem Restocking & Tiers Selection -->
+                <div class="section-header">💎 Auto-Gems Restocker & Allowed Tiers</div>
+                <div style="margin-top: 10px; margin-bottom: 20px;">
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px;">
+                        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: white; background: rgba(255,255,255,0.05); padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); cursor: pointer;">
+                            <input type="checkbox" id="gemtier-common" checked> Common
+                        </label>
+                        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: white; background: rgba(255,255,255,0.05); padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); cursor: pointer;">
+                            <input type="checkbox" id="gemtier-uncommon" checked> Uncommon
+                        </label>
+                        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: white; background: rgba(255,255,255,0.05); padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); cursor: pointer;">
+                            <input type="checkbox" id="gemtier-rare" checked> Rare
+                        </label>
+                        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: white; background: rgba(255,255,255,0.05); padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); cursor: pointer;">
+                            <input type="checkbox" id="gemtier-epic" checked> Epic
+                        </label>
+                        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: white; background: rgba(255,255,255,0.05); padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); cursor: pointer;">
+                            <input type="checkbox" id="gemtier-mythical" checked> Mythical
+                        </label>
+                        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: white; background: rgba(255,255,255,0.05); padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); cursor: pointer;">
+                            <input type="checkbox" id="gemtier-legendary" checked> Legendary
+                        </label>
+                        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: white; background: rgba(255,255,255,0.05); padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); cursor: pointer;">
+                            <input type="checkbox" id="gemtier-fabled" checked> Fabled
+                        </label>
+                    </div>
+                    <p style="font-size: 11px; color: var(--text-dim);">
+                        When buffs expire, the engine runs <code>oinv</code> and equips the highest tier of Hunting (Diamond: 051-057), Empowering (Round: 065-071), and Lucky (Heart: 072-078) gems matching checked tiers.
+                    </p>
+                </div>
+
+                <!-- Section 5: Huntbot Trait & Extra Grinds -->
+                <div class="section-header">⚙️ Huntbot Traits & Routine Actions</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 10px; margin-bottom: 20px;">
+                    <div class="input-group">
+                        <label class="input-label">Huntbot Auto-Upgrade Trait:</label>
+                        <select id="cust-autoTrait" class="input-field">
+                            <option value="efficiency">Efficiency (Faster Hunts)</option>
+                            <option value="duration">Duration (Longer Hunts)</option>
+                            <option value="cost">Cost (Cheaper Upgrades)</option>
+                            <option value="gain">Gain (More Cowoncy)</option>
+                            <option value="experience">Experience (Faster Leveling)</option>
+                            <option value="radar">Radar (Rare Animal Detector)</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label">Auto-Pray / Curse Action:</label>
+                        <select id="cust-autoPray" class="input-field">
+                            <option value="pray">🙏 Pray (/owo pray)</option>
+                            <option value="curse">😈 Curse (/owo curse)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="margin-top: 24px; display: flex; gap: 12px; align-items: center;">
+                    <button class="btn btn-primary" style="padding: 12px 24px; font-size: 14px;" onclick="saveCustomizeConfig()">💾 Save Customizations to All 10 Accounts</button>
+                    <span id="cust-save-status" style="font-size: 12px; color: var(--emerald);"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- 🛡️ TAB 6: SAFETY & ANTI-BAN                                             -->
         <!-- ========================================================================= -->
         <div id="tab-safety" class="tab-content">
             <div class="glass-card">
@@ -1173,12 +1312,12 @@
                 <div class="kpi-grid">
                     <div class="kpi-card">
                         <div class="kpi-label">Human Typing Latency</div>
-                        <div class="kpi-val" style="font-size: 24px;">500 - 1400ms</div>
-                        <div class="kpi-sub">Dispatches sendTyping() before sending</div>
+                        <div class="kpi-val" style="font-size: 24px;">500 - 1800ms</div>
+                        <div class="kpi-sub">Dispatches sendTyping() with character delay</div>
                     </div>
                     <div class="kpi-card">
                         <div class="kpi-label">Interval Jitter</div>
-                        <div class="kpi-val" style="font-size: 24px;">± 2500ms</div>
+                        <div class="kpi-val" style="font-size: 24px;">± 15% - 25%</div>
                         <div class="kpi-sub" style="color: var(--crimson-500);">Dynamic non-repeating delays</div>
                     </div>
                     <div class="kpi-card">
@@ -1193,7 +1332,7 @@
     </main>
 
     <!-- Toast Notification -->
-    <div id="toast">💾 Saved to All 3 Accounts!</div>
+    <div id="toast">💾 Saved to All 10 Accounts!</div>
 
     <!-- 100% SELF-CONTAINED JAVASCRIPT (ZERO EXTERNAL LIBRARIES) -->
     <script>
@@ -1212,7 +1351,10 @@
             document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
 
-            event.target.classList.add('active');
+            const targetBtn = Array.from(document.querySelectorAll('.nav-tab')).find(b => b.getAttribute('onclick')?.includes(`'${tabId}'`));
+            if (targetBtn) targetBtn.classList.add('active');
+            else if (window.event?.target && window.event.target.classList.contains('nav-tab')) window.event.target.classList.add('active');
+
             const target = document.getElementById('tab-' + tabId);
             if (target) target.classList.add('active');
         }
@@ -1280,7 +1422,7 @@
             let tableHtml = '';
 
             const activeCount = state.accounts.length;
-            const totalToDisplay = Math.max(activeCount, 3);
+            const totalToDisplay = Math.max(activeCount, 10);
 
             for (let i = 0; i < totalToDisplay; i++) {
                 const acc = state.accounts[i];
@@ -1419,6 +1561,50 @@
             if (cfg.captchaAPI) document.getElementById('cfg-captchaAPI').value = cfg.captchaAPI;
             if (cfg.apiKey) document.getElementById('cfg-apiKey').value = cfg.apiKey;
             if (cfg.webhookURL) document.getElementById('cfg-webhookURL').value = cfg.webhookURL;
+
+            // Populate Customize tab inputs
+            if (cfg.sleepCommandsThreshold !== undefined) {
+                const el = document.getElementById('cust-sleepCommandsThreshold');
+                if (el) el.value = cfg.sleepCommandsThreshold;
+            }
+            if (cfg.sleepDurationMinutes !== undefined) {
+                const el = document.getElementById('cust-sleepDurationMinutes');
+                if (el) el.value = cfg.sleepDurationMinutes;
+            }
+            if (cfg.typingSpeedMode) {
+                const el = document.getElementById('cust-typingSpeedMode');
+                if (el) el.value = cfg.typingSpeedMode;
+            }
+            if (cfg.questCheckInterval !== undefined) {
+                const el = document.getElementById('cust-questCheckInterval');
+                if (el) el.value = cfg.questCheckInterval;
+            }
+            if (cfg.questMaxMicroBets !== undefined) {
+                const el = document.getElementById('cust-questMaxMicroBets');
+                if (el) el.value = cfg.questMaxMicroBets;
+            }
+            if (cfg.crateCheckInterval !== undefined) {
+                const el = document.getElementById('cust-crateCheckInterval');
+                if (el) el.value = cfg.crateCheckInterval;
+            }
+            if (cfg.autoFabledLootbox !== undefined) {
+                const el = document.getElementById('cust-autoFabledLootbox');
+                if (el) el.value = cfg.autoFabledLootbox ? "true" : "false";
+            }
+            if (cfg.autoTrait) {
+                const el = document.getElementById('cust-autoTrait');
+                if (el) el.value = cfg.autoTrait;
+            }
+            if (cfg.autoPray) {
+                const el = document.getElementById('cust-autoPray');
+                if (el) el.value = Array.isArray(cfg.autoPray) && cfg.autoPray.includes("curse") ? "curse" : "pray";
+            }
+            if (Array.isArray(cfg.gemTier)) {
+                ['common', 'uncommon', 'rare', 'epic', 'mythical', 'legendary', 'fabled'].forEach(t => {
+                    const el = document.getElementById('gemtier-' + t);
+                    if (el) el.checked = cfg.gemTier.includes(t);
+                });
+            }
         }
 
         // Toggle Switch Helper
@@ -1522,6 +1708,13 @@
                     autoSell: document.getElementById('cfg-autoSell')?.checked ?? false,
                     autoGem: document.getElementById('cfg-autoGem')?.checked ? 1 : 0,
                     gemTier: ['common', 'uncommon', 'rare', 'epic', 'mythical', 'legendary', 'fabled'],
+                    sleepCommandsThreshold: parseInt(document.getElementById('cust-sleepCommandsThreshold')?.value || '100', 10),
+                    sleepDurationMinutes: parseInt(document.getElementById('cust-sleepDurationMinutes')?.value || '10', 10),
+                    typingSpeedMode: document.getElementById('cust-typingSpeedMode')?.value || 'balanced',
+                    questCheckInterval: parseInt(document.getElementById('cust-questCheckInterval')?.value || '30', 10),
+                    questMaxMicroBets: parseInt(document.getElementById('cust-questMaxMicroBets')?.value || '5', 10),
+                    crateCheckInterval: parseInt(document.getElementById('cust-crateCheckInterval')?.value || '20', 10),
+                    autoFabledLootbox: document.getElementById('cust-autoFabledLootbox')?.value === 'true',
                     adminID: adminID || undefined,
                     captchaAPI: (captchaAPI && apiKey) ? captchaAPI : undefined,
                     apiKey: (captchaAPI && apiKey) ? apiKey : undefined,
@@ -1596,10 +1789,49 @@
                     body: JSON.stringify(newCfg)
                 });
                 if (res.ok) {
-                    showToast('💾 Saved & Applied to All Accounts!');
+                    showToast('💾 Saved & Applied to All 10 Accounts!');
                 }
             } catch (e) {
                 showToast('❌ Error saving configuration.');
+            }
+        }
+
+        // Save Customization Settings
+        async function saveCustomizeConfig() {
+            const tiers = [];
+            ['common', 'uncommon', 'rare', 'epic', 'mythical', 'legendary', 'fabled'].forEach(t => {
+                if (document.getElementById('gemtier-' + t)?.checked) tiers.push(t);
+            });
+
+            const newCfg = {
+                sleepCommandsThreshold: parseInt(document.getElementById('cust-sleepCommandsThreshold')?.value || '100', 10),
+                sleepDurationMinutes: parseInt(document.getElementById('cust-sleepDurationMinutes')?.value || '10', 10),
+                typingSpeedMode: document.getElementById('cust-typingSpeedMode')?.value || 'balanced',
+                questCheckInterval: parseInt(document.getElementById('cust-questCheckInterval')?.value || '30', 10),
+                questMaxMicroBets: parseInt(document.getElementById('cust-questMaxMicroBets')?.value || '5', 10),
+                crateCheckInterval: parseInt(document.getElementById('cust-crateCheckInterval')?.value || '20', 10),
+                autoFabledLootbox: document.getElementById('cust-autoFabledLootbox')?.value === 'true',
+                gemTier: tiers.length > 0 ? tiers : ['common', 'uncommon', 'rare', 'epic', 'mythical', 'legendary', 'fabled'],
+                autoTrait: document.getElementById('cust-autoTrait')?.value || 'efficiency',
+                autoPray: [document.getElementById('cust-autoPray')?.value || 'pray'],
+            };
+
+            try {
+                const res = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newCfg)
+                });
+                if (res.ok) {
+                    showToast('🎨 Customizations Saved to All 10 Accounts!');
+                    const statusSpan = document.getElementById('cust-save-status');
+                    if (statusSpan) {
+                        statusSpan.textContent = '✅ Saved & Applied to All 10 Accounts!';
+                        setTimeout(() => statusSpan.textContent = '', 3500);
+                    }
+                }
+            } catch (e) {
+                showToast('❌ Error saving customizations.');
             }
         }
 
