@@ -2,6 +2,8 @@ import { NotificationService } from "@/services/NotificationService.js";
 import { FeatureFnParams } from "@/typings/index.js";
 import { t } from "@/utils/locales.js";
 import { logger } from "@/utils/logger.js";
+import { dashboardState } from "@/dashboard/DashboardState.js";
+import { WebhookNotifier } from "@/services/notifiers/WebhookNotifier.js";
 
 export class CriticalEventHandler {
     public static handleRejection(params: FeatureFnParams) {
@@ -34,14 +36,27 @@ export class CriticalEventHandler {
         });
     }
 
-    public static handleBan({ t }: FeatureFnParams) {
-        logger.alert(`${t("status.states.banned")}, ${t("status.states.stop")}`);
-        // consoleNotify(...)
-        process.exit(-1);
+    public static handleBan({ agent, t }: FeatureFnParams) {
+        const username = agent.client.user?.username || "Account";
+        logger.alert(`Account ${username}: ${t("status.states.banned")}, pausing this worker to protect other accounts.`);
+        agent.farmLoopPaused = true;
+        agent.farmLoopRunning = false;
+        dashboardState.broadcastStatus();
+        WebhookNotifier.sendRichEmbed(agent, {
+            title: `⛔ Account Banned: ${username}`,
+            description: `This account was marked banned by OwO bot and has been safely isolated. All other active accounts continue farming normally.`,
+            color: "#EF4444"
+        }).catch(() => {});
+
+        if (dashboardState.accounts.size <= 1) {
+            process.exit(-1);
+        }
     }
 
     public static async handleNoMoney(params: FeatureFnParams) {
         const { agent, t } = params;
+        const username = agent.client.user?.username || "Account";
+
         if (agent.config.autoSell) {
             logger.warn(t("handlers.criticalEvent.noMoney.attemptingSell"));
 
@@ -59,14 +74,32 @@ export class CriticalEventHandler {
             if (/sold.*for a total of/.test(sellResponse.content)) {
                 logger.data(sellResponse.content.replace(/<a?:(\w+):\d+>/g, '$1').replace("**", "")); // Replace emojis with their names
             } else {
-                logger.warn(t("handlers.criticalEvent.noMoney.noItems"));
-                NotificationService.consoleNotify(params);
-                process.exit(-1);
+                logger.warn(`Account ${username}: ${t("handlers.criticalEvent.noMoney.noItems")}. Pausing this account.`);
+                agent.farmLoopPaused = true;
+                dashboardState.broadcastStatus();
+                WebhookNotifier.sendRichEmbed(agent, {
+                    title: `💸 Out of Cowoncy: ${username}`,
+                    description: `Account has insufficient cowoncy and no animals available to sell. This account has been paused while other accounts continue farming.`,
+                    color: "#F59E0B"
+                }).catch(() => {});
+
+                if (dashboardState.accounts.size <= 1) {
+                    process.exit(-1);
+                }
             }
         } else {
-            logger.warn(t("handlers.criticalEvent.noMoney.autoSellDisabled"));
-            NotificationService.consoleNotify(params);
-            process.exit(-1);
+            logger.warn(`Account ${username}: ${t("handlers.criticalEvent.noMoney.autoSellDisabled")}. Pausing this account.`);
+            agent.farmLoopPaused = true;
+            dashboardState.broadcastStatus();
+            WebhookNotifier.sendRichEmbed(agent, {
+                title: `💸 Out of Cowoncy: ${username}`,
+                description: `Account has insufficient cowoncy and autoSell is disabled. This account has been paused while other accounts continue farming.`,
+                color: "#F59E0B"
+            }).catch(() => {});
+
+            if (dashboardState.accounts.size <= 1) {
+                process.exit(-1);
+            }
         }
     }
 }

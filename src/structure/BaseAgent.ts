@@ -66,6 +66,7 @@ export class BaseAgent {
     public breakUntil = 0;
     public dailyStreak = 0;
     public nextDailyAt = 0;
+    public cowoncy = 0;
     public activeQuests: string[] = [];
     public jitterOffset = ranInt(1500, 5000);
 
@@ -295,6 +296,25 @@ export class BaseAgent {
                 this.farmLoop();
             }, Math.min(remaining + ranInt(1000, 2500), 20000));
             return;
+        }
+
+        // Optional Circadian Night Sleep Simulation
+        if (this.config.nightMode) {
+            const currentHour = new Date().getHours();
+            const start = this.config.nightStartHour ?? 2;
+            const end = this.config.nightEndHour ?? 7;
+            const isNight = start < end
+                ? (currentHour >= start && currentHour < end)
+                : (currentHour >= start || currentHour < end);
+
+            if (isNight) {
+                logger.info(`🌙 [Night Sleep] Current hour ${currentHour}:00 is within night schedule (${start}:00 - ${end}:00) for ${this.client.user?.username}. Sleeping...`);
+                try { this.client.user?.setStatus("idle"); } catch {}
+                setTimeout(() => {
+                    this.farmLoop();
+                }, ranInt(10 * 60 * 1000, 15 * 60 * 1000));
+                return;
+            }
         }
 
         this.farmLoopRunning = true;

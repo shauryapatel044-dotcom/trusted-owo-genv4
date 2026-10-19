@@ -10,6 +10,9 @@ export class ExtendedClient extends Client {
         this.on("debug", logger.debug);
         this.on("warn", logger.warn);
         this.on("error", logger.error);
+        this.on("rateLimit", (rateLimitData) => {
+            logger.warn(`⚠️ [RateLimit] Discord rate limit on route: ${rateLimitData?.route || 'global'}. Backing off for ${Math.round((rateLimitData?.timeout || 2000) / 1000)}s...`);
+        });
     };
     sendMessage = async (message, { channel, prefix = "", typing, skipLogging = false, }) => {
         // Human Etiquette: If another account in our farm is typing in this channel, pause & take turns

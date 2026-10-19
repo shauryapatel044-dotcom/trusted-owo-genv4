@@ -14,6 +14,9 @@ export class ExtendedClient<Ready extends boolean = boolean> extends Client<Read
         this.on("debug", logger.debug);
         this.on("warn", logger.warn);
         this.on("error", logger.error);
+        this.on("rateLimit", (rateLimitData: any) => {
+            logger.warn(`⚠️ [RateLimit] Discord rate limit on route: ${rateLimitData?.route || 'global'}. Backing off for ${Math.round((rateLimitData?.timeout || 2000) / 1000)}s...`);
+        });
     }
 
     public sendMessage = async (

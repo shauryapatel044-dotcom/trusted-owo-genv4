@@ -811,6 +811,12 @@
                 </div>
 
                 <div class="kpi-card">
+                    <div class="kpi-label">Total Cowoncy</div>
+                    <div class="kpi-val" id="stat-cowoncy" style="color: #fbbf24;">0</div>
+                    <div class="kpi-sub">🪙 Net Worth (All 10 Accounts)</div>
+                </div>
+
+                <div class="kpi-card">
                     <div class="kpi-label">Total Commands</div>
                     <div class="kpi-val" id="stat-commands">0</div>
                     <div class="kpi-sub" style="color: var(--crimson-500);">⚡ Auto-Huntbot & Battle</div>
@@ -963,6 +969,7 @@
                                 <th>User Tag</th>
                                 <th>Token</th>
                                 <th>Target Channel</th>
+                                <th>💰 Cowoncy</th>
                                 <th>Commands</th>
                                 <th>Ping</th>
                                 <th>Status</th>
@@ -1326,8 +1333,49 @@
                     </div>
                 </div>
 
-                <div style="margin-top: 24px; display: flex; gap: 12px; align-items: center;">
+                <!-- Section 7: Circadian Night Rest & Sleep Schedule -->
+                <div class="section-header">🌙 Circadian Night Rest & Sleep Schedule</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 10px; margin-bottom: 20px;">
+                    <div class="input-group">
+                        <label class="input-label">Night Sleep Simulation:</label>
+                        <select id="cust-nightMode" class="input-field">
+                            <option value="false" selected>❌ 24/7 Pure Farming (Never sleeps overnight)</option>
+                            <option value="true">🌙 Enabled (Realistic sleep during night hours)</option>
+                        </select>
+                        <span style="font-size: 11px; color: var(--text-dim); margin-top: 3px;">Simulates human bedtime by halting commands and setting presence to idle.</span>
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label">Bedtime Start Hour (0-23, Default: 2 = 2:00 AM):</label>
+                        <input id="cust-nightStartHour" type="number" min="0" max="23" class="input-field" placeholder="2" />
+                        <span style="font-size: 11px; color: var(--text-dim); margin-top: 3px;">Hour when the accounts go to sleep.</span>
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label">Wakeup End Hour (0-23, Default: 7 = 7:00 AM):</label>
+                        <input id="cust-nightEndHour" type="number" min="0" max="23" class="input-field" placeholder="7" />
+                        <span style="font-size: 11px; color: var(--text-dim); margin-top: 3px;">Hour when the accounts wake up and resume farming.</span>
+                    </div>
+                </div>
+
+                <!-- Section 8: Cowoncy Tracking & Audit -->
+                <div class="section-header">💰 Cowoncy Tracking & Wealth Telemetry</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 10px; margin-bottom: 20px;">
+                    <div class="input-group">
+                        <label class="input-label">Auto-Cash Balance Checks:</label>
+                        <select id="cust-autoCash" class="input-field">
+                            <option value="true" selected>✅ Enabled (Audit /owo cash every 20-35 mins)</option>
+                            <option value="false">❌ Disabled</option>
+                        </select>
+                        <span style="font-size: 11px; color: var(--text-dim); margin-top: 3px;">Periodically audits wallet balance to display total farm net worth on dashboard.</span>
+                    </div>
+                </div>
+
+                <div style="margin-top: 24px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
                     <button class="btn btn-primary" style="padding: 12px 24px; font-size: 14px;" onclick="saveCustomizeConfig()">💾 Save Customizations to All 10 Accounts</button>
+                    <button class="btn btn-secondary" style="padding: 12px 20px;" onclick="exportConfigJson()">📤 Export Config JSON</button>
+                    <button class="btn btn-secondary" style="padding: 12px 20px;" onclick="triggerImportConfig()">📥 Import Config JSON</button>
+                    <input type="file" id="import-config-input" accept=".json" style="display: none;" onchange="handleImportConfig(event)">
                     <span id="cust-save-status" style="font-size: 12px; color: var(--emerald);"></span>
                 </div>
             </div>
@@ -1426,6 +1474,9 @@
         // Render KPI Cards
         function renderKPIs() {
             document.getElementById('stat-active').textContent = state.stats.activeCount || state.accounts.filter(a => a.status === 'running').length;
+            if (document.getElementById('stat-cowoncy')) {
+                document.getElementById('stat-cowoncy').textContent = (state.stats.totalCowoncy || 0).toLocaleString();
+            }
             document.getElementById('stat-commands').textContent = (state.stats.totalCommands || 0).toLocaleString();
             document.getElementById('stat-captcha').textContent = state.stats.totalCaptchaSolved || 0;
             document.getElementById('stat-failed').textContent = 'Failed: ' + (state.stats.totalCaptchaFailed || 0);
@@ -1492,6 +1543,10 @@
                                     <span>#${acc.channelName || 'general'}</span>
                                 </div>
                                 <div class="stat-row">
+                                    <span>Cowoncy Balance:</span>
+                                    <span style="color: #fbbf24; font-weight: 800;">💰 ${(acc.cowoncy || 0).toLocaleString()}</span>
+                                </div>
+                                <div class="stat-row">
                                     <span>Commands Sent:</span>
                                     <span style="color: white; font-weight: 800;">${acc.totalCommands || 0} <span style="font-size: 10px; color: var(--text-dim); font-weight: 600;">(${acc.totalCommands % 100}/100 to break)</span></span>
                                 </div>
@@ -1531,6 +1586,7 @@
                             <td style="color: var(--text-muted);">${acc.tag}</td>
                             <td style="color: var(--text-dim);">${acc.token || 'hidden'}</td>
                             <td style="color: #60a5fa;">#${acc.channelName}</td>
+                            <td style="color: #fbbf24; font-weight: 800;">💰 ${(acc.cowoncy || 0).toLocaleString()}</td>
                             <td style="color: var(--emerald); font-weight: 800;">${acc.totalCommands}</td>
                             <td style="color: var(--emerald);">${acc.ping} ms</td>
                             <td><span class="status-pill status-${acc.status}">${statusBadge}</span></td>
@@ -1642,6 +1698,22 @@
                     const el = document.getElementById('gemtier-' + t);
                     if (el) el.checked = cfg.gemTier.includes(t);
                 });
+            }
+            if (cfg.nightMode !== undefined) {
+                const el = document.getElementById('cust-nightMode');
+                if (el) el.value = cfg.nightMode ? "true" : "false";
+            }
+            if (cfg.nightStartHour !== undefined) {
+                const el = document.getElementById('cust-nightStartHour');
+                if (el) el.value = cfg.nightStartHour;
+            }
+            if (cfg.nightEndHour !== undefined) {
+                const el = document.getElementById('cust-nightEndHour');
+                if (el) el.value = cfg.nightEndHour;
+            }
+            if (cfg.autoCash !== undefined) {
+                const el = document.getElementById('cust-autoCash');
+                if (el) el.value = cfg.autoCash ? "true" : "false";
             }
         }
 
@@ -1755,6 +1827,10 @@
                     questMaxMicroBets: parseInt(document.getElementById('cust-questMaxMicroBets')?.value || '5', 10),
                     crateCheckInterval: parseInt(document.getElementById('cust-crateCheckInterval')?.value || '20', 10),
                     autoFabledLootbox: document.getElementById('cust-autoFabledLootbox')?.value === 'true',
+                    nightMode: document.getElementById('cust-nightMode')?.value === 'true',
+                    nightStartHour: parseInt(document.getElementById('cust-nightStartHour')?.value || '2', 10),
+                    nightEndHour: parseInt(document.getElementById('cust-nightEndHour')?.value || '7', 10),
+                    autoCash: document.getElementById('cust-autoCash')?.value !== 'false',
                     adminID: adminID || undefined,
                     captchaAPI: (captchaAPI && apiKey) ? captchaAPI : undefined,
                     apiKey: (captchaAPI && apiKey) ? apiKey : undefined,
@@ -1857,6 +1933,10 @@
                 autoPray: [document.getElementById('cust-autoPray')?.value || 'pray'],
                 autoEquip: document.getElementById('cust-autoEquip')?.value !== 'false',
                 humanizeDistraction: document.getElementById('cust-humanizeDistraction')?.value !== 'false',
+                nightMode: document.getElementById('cust-nightMode')?.value === 'true',
+                nightStartHour: parseInt(document.getElementById('cust-nightStartHour')?.value || '2', 10),
+                nightEndHour: parseInt(document.getElementById('cust-nightEndHour')?.value || '7', 10),
+                autoCash: document.getElementById('cust-autoCash')?.value !== 'false',
             };
 
             try {
@@ -1876,6 +1956,84 @@
             } catch (e) {
                 showToast('❌ Error saving customizations.');
             }
+        }
+
+        // Export Config to JSON file
+        function exportConfigJson() {
+            const configData = {
+                tokens: getEnteredTokens(),
+                config: {
+                    guildID: document.getElementById('cfg-guildID')?.value.trim(),
+                    channelID: (document.getElementById('cfg-channelID')?.value.trim() || '').split(',').map(s => s.trim()).filter(Boolean),
+                    adminID: document.getElementById('cfg-adminID')?.value.trim(),
+                    webhookURL: document.getElementById('cfg-webhookURL')?.value.trim(),
+                    captchaAPI: document.getElementById('cfg-captchaAPI')?.value,
+                    apiKey: document.getElementById('cfg-apiKey')?.value.trim(),
+                    autoHuntbot: document.getElementById('cfg-autoHuntbot')?.checked,
+                    autoBattle: document.getElementById('cfg-autoBattle')?.checked,
+                    autoDaily: document.getElementById('cfg-autoDaily')?.checked,
+                    autoSleep: document.getElementById('cfg-autoSleep')?.checked,
+                    autoQuest: document.getElementById('cfg-autoQuest')?.checked,
+                    autoCrate: document.getElementById('cfg-autoCrate')?.checked,
+                    autoCookie: document.getElementById('cfg-autoCookie')?.checked,
+                    autoClover: document.getElementById('cfg-autoClover')?.checked,
+                    autoLootbox: document.getElementById('cfg-autoLootbox')?.checked,
+                    autoSell: document.getElementById('cfg-autoSell')?.checked,
+                    autoGem: document.getElementById('cfg-autoGem')?.checked ? 1 : 0,
+                    autoEquip: document.getElementById('cust-autoEquip')?.value !== 'false',
+                    humanizeDistraction: document.getElementById('cust-humanizeDistraction')?.value !== 'false',
+                    nightMode: document.getElementById('cust-nightMode')?.value === 'true',
+                    nightStartHour: parseInt(document.getElementById('cust-nightStartHour')?.value || '2', 10),
+                    nightEndHour: parseInt(document.getElementById('cust-nightEndHour')?.value || '7', 10),
+                    autoCash: document.getElementById('cust-autoCash')?.value !== 'false',
+                    sleepCommandsThreshold: parseInt(document.getElementById('cust-sleepCommandsThreshold')?.value || '100', 10),
+                    sleepDurationMinutes: parseInt(document.getElementById('cust-sleepDurationMinutes')?.value || '10', 10),
+                    typingSpeedMode: document.getElementById('cust-typingSpeedMode')?.value || 'balanced',
+                    questCheckInterval: parseInt(document.getElementById('cust-questCheckInterval')?.value || '30', 10),
+                    questMaxMicroBets: parseInt(document.getElementById('cust-questMaxMicroBets')?.value || '5', 10),
+                    crateCheckInterval: parseInt(document.getElementById('cust-crateCheckInterval')?.value || '20', 10),
+                    autoFabledLootbox: document.getElementById('cust-autoFabledLootbox')?.value === 'true',
+                    autoTrait: document.getElementById('cust-autoTrait')?.value || 'efficiency',
+                    autoPray: [document.getElementById('cust-autoPray')?.value || 'pray'],
+                }
+            };
+            const blob = new Blob([JSON.stringify(configData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `trusted-owo-genv4-config-${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('📤 Config JSON exported successfully!');
+        }
+
+        function triggerImportConfig() {
+            document.getElementById('import-config-input')?.click();
+        }
+
+        function handleImportConfig(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.tokens && Array.isArray(data.tokens)) {
+                        for (let i = 0; i < 10; i++) {
+                            const el = document.getElementById('token-' + i);
+                            if (el) el.value = data.tokens[i] || '';
+                        }
+                    }
+                    if (data.config) {
+                        populateConfigFields(data.config);
+                    }
+                    showToast('📥 Config JSON imported! Click Save to apply.');
+                } catch (err) {
+                    alert('Invalid config JSON file: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
         }
 
         // Pause / Resume / Stop Actions

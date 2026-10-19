@@ -4,6 +4,7 @@ import { Schematic } from "@/structure/Schematic.js";
 import { NORMALIZE_REGEX } from "@/typings/constants.js";
 import { logger } from "@/utils/logger.js";
 import { WebhookNotifier } from "@/services/notifiers/WebhookNotifier.js";
+import { dashboardState } from "@/dashboard/DashboardState.js";
 
 export default Schematic.registerEvent({
     name: "owoMessageEvent",
@@ -55,6 +56,17 @@ export default Schematic.registerEvent({
         if (/found a|caught a|you found|you caught/i.test(normalizedContent)) {
             if (/mythical|legendary|fabled|special|gem/i.test(normalizedContent)) {
                 WebhookNotifier.sendRareCatch(agent, normalizedContent).catch(() => {});
+            }
+        }
+
+        // 6. Track Cowoncy Balance dynamically
+        const cowoncyMatch = normalizedContent.match(/(?:you\s+(?:currently\s+)?have|balance:?|you\s+now\s+have)\s*([0-9,]+)\s*(?:cowoncy|<:cowoncy:\d+>)?/i);
+        if (cowoncyMatch) {
+            const rawVal = cowoncyMatch[1].replace(/,/g, "");
+            const parsedAmount = parseInt(rawVal, 10);
+            if (!isNaN(parsedAmount) && parsedAmount >= 0) {
+                agent.cowoncy = parsedAmount;
+                dashboardState.broadcastStatus();
             }
         }
     }

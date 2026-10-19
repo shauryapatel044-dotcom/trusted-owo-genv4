@@ -75,6 +75,7 @@ export class DashboardState {
                 startedAt: item.startedAt,
                 dailyStreak: agent.dailyStreak,
                 breakUntil: agent.breakUntil,
+                cowoncy: agent.cowoncy || 0,
                 activeQuests: agent.activeQuests
             });
         }
@@ -84,11 +85,13 @@ export class DashboardState {
         let totalCommands = 0;
         let totalCaptchaSolved = 0;
         let totalCaptchaFailed = 0;
+        let totalCowoncy = 0;
         let activeCount = 0;
         for (const [, item] of this.accounts.entries()) {
             totalCommands += item.agent.totalCommands;
             totalCaptchaSolved += item.agent.totalCaptchaSolved;
             totalCaptchaFailed += item.agent.totalCaptchaFailed;
+            totalCowoncy += (item.agent.cowoncy || 0);
             if (!item.agent.farmLoopPaused && !item.agent.captchaDetected) {
                 activeCount++;
             }
@@ -98,6 +101,7 @@ export class DashboardState {
             totalAccounts: this.accounts.size,
             activeCount,
             totalCommands,
+            totalCowoncy,
             totalCaptchaSolved,
             totalCaptchaFailed,
             globalUptime: Math.floor((Date.now() - this.startTime) / 1000)
