@@ -1,5 +1,6 @@
 import { TwoCaptchaSolver } from "../services/solvers/TwoCaptchaSolver.js";
 import { YesCaptchaSolver } from "../services/solvers/YesCaptchaSolver.js";
+import { GeminiCaptchaSolver } from "../services/solvers/GeminiCaptchaSolver.js";
 import { downloadAttachment } from "../utils/download.js";
 import { logger } from "../utils/logger.js";
 import axios from "axios";
@@ -26,6 +27,8 @@ const getPlatformForHeader = () => {
 };
 const createSolver = (provider, apiKey) => {
     switch (provider) {
+        case "gemini":
+            return new GeminiCaptchaSolver(apiKey);
         case "yescaptcha":
             return new YesCaptchaSolver(apiKey);
         case "2captcha":

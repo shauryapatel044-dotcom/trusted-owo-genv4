@@ -19,8 +19,8 @@
     ],
     "adminID": "PASTE_YOUR_MAIN_DISCORD_USER_ID_HERE",
     "webhookURL": "https://discord.com/api/webhooks/YOUR_WEBHOOK_URL_HERE",
-    "captchaAPI": "2captcha",
-    "apiKey": "OPTIONAL_2CAPTCHA_API_KEY_HERE",
+    "captchaAPI": "gemini",
+    "apiKey": "PASTE_YOUR_GEMINI_API_KEY_HERE",
     
     "autoHuntbot": true,
     "autoBattle": true,

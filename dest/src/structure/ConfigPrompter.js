@@ -228,6 +228,10 @@ export class ConfigPrompter extends BasePrompter {
                 value: undefined
             },
             {
+                name: `Google Gemini AI (Vision) [${chalk.underline("https://aistudio.google.com")}]`,
+                value: "gemini"
+            },
+            {
                 name: `2Captcha [${chalk.underline("https://2captcha.com")}]`,
                 value: "2captcha"
             },

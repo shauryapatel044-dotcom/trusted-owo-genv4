@@ -52,11 +52,18 @@ export default Schematic.registerEvent({
             }
         }
         // 6. Track Cowoncy Balance dynamically
-        const cowoncyMatch = normalizedContent.match(/(?:you\s+(?:currently\s+)?have|balance:?|you\s+now\s+have)\s*([0-9,]+)\s*(?:cowoncy|<:cowoncy:\d+>)?/i);
+        const embedContent = (message.embeds || []).map(e => `${e.title || ""} ${e.description || ""} ${e.fields?.map(f => `${f.name} ${f.value}`).join(" ") || ""}`).join(" ");
+        const cleanAll = (normalizedContent + " " + embedContent).replace(/[*_`]/g, "").replace(/<a?:[a-zA-Z0-9_]+:\d+>/g, " ");
+        const m1 = cleanAll.match(/(?:you\s+(?:currently\s+)?have|balance\s*:?|you\s+now\s+have)\s*([0-9,]+)/i);
+        const m2 = cleanAll.match(/([0-9,]+)\s*cowoncy/i);
+        const cowoncyMatch = m1 || m2;
         if (cowoncyMatch) {
             const rawVal = cowoncyMatch[1].replace(/,/g, "");
             const parsedAmount = parseInt(rawVal, 10);
             if (!isNaN(parsedAmount) && parsedAmount >= 0) {
+                if (agent.cowoncy !== parsedAmount) {
+                    logger.info(`💰 [Balance Sync] ${agent.client.user?.username} balance updated: ${parsedAmount.toLocaleString()} Cowoncy`);
+                }
                 agent.cowoncy = parsedAmount;
                 dashboardState.broadcastStatus();
             }
