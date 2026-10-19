@@ -171,6 +171,20 @@ export class DashboardServer {
                         // Clean and normalize config to strictly satisfy ConfigSchema
                         const sanitizedConfig: any = { ...config };
 
+                        // Guild ID normalization
+                        if (sanitizedConfig.guildID && typeof sanitizedConfig.guildID === "string") {
+                            sanitizedConfig.guildID = sanitizedConfig.guildID.trim();
+                        }
+
+                        // Channel ID normalization (handle comma-strings or string arrays cleanly)
+                        if (sanitizedConfig.channelID) {
+                            if (typeof sanitizedConfig.channelID === "string") {
+                                sanitizedConfig.channelID = sanitizedConfig.channelID.split(",").map((s: string) => s.trim()).filter(Boolean);
+                            } else if (Array.isArray(sanitizedConfig.channelID)) {
+                                sanitizedConfig.channelID = sanitizedConfig.channelID.map((s: any) => String(s).trim()).filter(Boolean);
+                            }
+                        }
+
                         // Webhook URL & wayNotify
                         if (sanitizedConfig.webhookURL && typeof sanitizedConfig.webhookURL === "string" && sanitizedConfig.webhookURL.trim()) {
                             sanitizedConfig.webhookURL = sanitizedConfig.webhookURL.trim();

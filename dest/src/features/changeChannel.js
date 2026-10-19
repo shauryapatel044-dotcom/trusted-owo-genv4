@@ -10,6 +10,6 @@ export default Schematic.registerFeature({
     },
     run: async ({ agent }) => {
         agent.channelChangeThreshold += ranInt(17, 56);
-        agent.setActiveChannel();
+        await agent.setActiveChannel();
     }
 });

@@ -68,30 +68,74 @@ export class BaseAgent {
             },
         };
     }
-    setActiveChannel = (id) => {
-        const channelIDs = this.config.channelID;
-        if (!channelIDs || channelIDs.length === 0) {
-            throw new Error("No channel IDs provided in the configuration.");
+    setActiveChannel = async (id) => {
+        const rawChannelIDs = this.config.channelID;
+        if (!rawChannelIDs || (Array.isArray(rawChannelIDs) && rawChannelIDs.length === 0)) {
+            logger.error(`Account ${this.client.user?.username}: No channel IDs provided in the configuration.`);
+            return undefined;
         }
-        const channelID = id || channelIDs[ranInt(0, channelIDs.length)];
+        const channelIDs = (Array.isArray(rawChannelIDs) ? rawChannelIDs : [rawChannelIDs])
+            .map(c => String(c).trim())
+            .filter(Boolean);
+        if (channelIDs.length === 0)
+            return undefined;
+        const targetChannelID = id || channelIDs[ranInt(0, channelIDs.length)];
         try {
-            const channel = this.client.channels.cache.get(channelID);
+            // 1. Try Discord client cache first
+            let channel = this.client.channels.cache.get(targetChannelID);
+            // 2. Fetch directly from Discord API if not in cache (essential for selfbots)
+            if (!channel) {
+                channel = await this.client.channels.fetch(targetChannelID).catch(() => null);
+            }
+            // 3. If still not found, fetch guild first
+            if (!channel && this.config.guildID) {
+                const cleanGuildId = String(this.config.guildID).trim();
+                const guild = this.client.guilds.cache.get(cleanGuildId)
+                    || await this.client.guilds.fetch(cleanGuildId).catch(() => null);
+                if (guild) {
+                    channel = await guild.channels.fetch(targetChannelID).catch(() => null);
+                }
+            }
             if (channel && channel.isText()) {
                 this.activeChannel = channel;
                 logger.info(t("agent.messages.activeChannelSet", { channelName: this.activeChannel.name }));
                 return this.activeChannel;
             }
-            else {
-                logger.warn(t("agent.messages.invalidChannel", { channelID }));
-                this.config.channelID = this.config.channelID.filter(id => id !== channelID);
-                logger.info(t("agent.messages.removedInvalidChannel", { channelID }));
+            // 4. Try any of the other configured channel IDs
+            for (const fallbackId of channelIDs) {
+                if (fallbackId === targetChannelID)
+                    continue;
+                let fbChannel = this.client.channels.cache.get(fallbackId)
+                    || await this.client.channels.fetch(fallbackId).catch(() => null);
+                if (fbChannel && fbChannel.isText()) {
+                    this.activeChannel = fbChannel;
+                    logger.info(`[Channel Sync] Set active channel to fallback: #${this.activeChannel.name}`);
+                    return this.activeChannel;
+                }
             }
+            // 5. Fallback: Find any readable & writable text channel in the guild
+            if (this.config.guildID) {
+                const cleanGuildId = String(this.config.guildID).trim();
+                const guild = this.client.guilds.cache.get(cleanGuildId)
+                    || await this.client.guilds.fetch(cleanGuildId).catch(() => null);
+                if (guild) {
+                    const availableChannels = await guild.channels.fetch().catch(() => null);
+                    if (availableChannels) {
+                        const sendableChannel = availableChannels.find((c) => c && c.isText() && c.permissionsFor(this.client.user)?.has("SEND_MESSAGES"));
+                        if (sendableChannel) {
+                            this.activeChannel = sendableChannel;
+                            logger.warn(`[Channel Sync] Target channel ${targetChannelID} not found. Auto-fallback to guild text channel: #${this.activeChannel.name} (${this.activeChannel.id})`);
+                            return this.activeChannel;
+                        }
+                    }
+                }
+            }
+            logger.error(`Account ${this.client.user?.username}: Cannot access channel ${targetChannelID} or find text channel in server ${this.config.guildID}. Make sure the account has joined the server and can see the channel.`);
         }
         catch (error) {
-            logger.error(`Failed to fetch channel with ID ${channelID}:`);
-            logger.error(error);
+            logger.error(`Failed to fetch channel with ID ${targetChannelID}: ${error}`);
         }
-        return;
+        return undefined;
     };
     reloadConfig = () => {
         for (const key of Object.keys(this.cache)) {
@@ -104,6 +148,9 @@ export class BaseAgent {
         prefix: this.prefix,
     }) => {
         if (!this.activeChannel) {
+            await this.setActiveChannel();
+        }
+        if (!this.activeChannel) {
             logger.warn(t("agent.messages.noActiveChannel"));
             return;
         }
@@ -115,7 +162,12 @@ export class BaseAgent {
     };
     isBotOnline = async () => {
         try {
-            const owo = await this.activeChannel.guild.members.fetch(this.owoID);
+            if (!this.activeChannel) {
+                await this.setActiveChannel();
+            }
+            if (!this.activeChannel)
+                return false;
+            const owo = await this.activeChannel.guild.members.fetch(this.owoID).catch(() => null);
             return !!owo && owo.presence?.status !== "offline";
         }
         catch (error) {
@@ -125,12 +177,14 @@ export class BaseAgent {
     };
     awaitResponse = (options) => {
         return new Promise((resolve, reject) => {
-            const { channel = this.activeChannel, filter, time = 30_000, max = 1, trigger, expectResponse = false, } = options;
-            // 2. Add a guard clause for safety.
+            let { channel = this.activeChannel, filter, time = 30_000, max = 1, trigger, expectResponse = false, } = options;
+            if (!channel && this.activeChannel) {
+                channel = this.activeChannel;
+            }
+            // Guard: resolve undefined safely if no channel can be resolved
             if (!channel) {
-                const error = new Error("awaitResponse requires a channel, but none was provided or set as active.");
-                logger.error(error.message);
-                return reject(error);
+                logger.warn("[awaitResponse] No active channel available yet, skipping awaitResponse.");
+                return resolve(undefined);
             }
             const collector = channel.createMessageCollector({
                 filter,
@@ -254,6 +308,16 @@ export class BaseAgent {
                 return;
             }
         }
+        if (!this.activeChannel) {
+            await this.setActiveChannel();
+        }
+        if (!this.activeChannel) {
+            logger.warn(`Account ${this.client.user?.username}: No active channel is set or accessible. Retrying in 10s...`);
+            setTimeout(() => {
+                this.farmLoop();
+            }, 10_000);
+            return;
+        }
         this.farmLoopRunning = true;
         try {
             const featureKeys = Array.from(this.features.keys());
@@ -358,7 +422,7 @@ export class BaseAgent {
             throw new Error("Client is not ready. Ensure the client is logged in before initializing the agent.");
         }
         const agent = new BaseAgent(client, config);
-        agent.setActiveChannel();
+        await agent.setActiveChannel();
         await agent.registerEvents();
         logger.debug("BaseAgent initialized successfully.");
         logger.info(t("agent.messages.loggedIn", { username: client.user.username }));
