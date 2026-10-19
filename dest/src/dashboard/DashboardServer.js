@@ -204,10 +204,21 @@ export class DashboardServer {
                         sanitizedConfig.autoQuote = Array.isArray(sanitizedConfig.autoQuote) && sanitizedConfig.autoQuote.length > 0 ? sanitizedConfig.autoQuote : ["owo"];
                         sanitizedConfig.autoRPP = Array.isArray(sanitizedConfig.autoRPP) && sanitizedConfig.autoRPP.length > 0 ? sanitizedConfig.autoRPP : ["run", "pup", "piku"];
                         sanitizedConfig.autoPray = Array.isArray(sanitizedConfig.autoPray) && sanitizedConfig.autoPray.length > 0 ? sanitizedConfig.autoPray : ["pray"];
+                        // Feature defaults for 24/7 farming & safety
+                        sanitizedConfig.autoQuest = sanitizedConfig.autoQuest ?? true;
+                        sanitizedConfig.autoCrate = sanitizedConfig.autoCrate ?? true;
+                        sanitizedConfig.autoDaily = true;
+                        sanitizedConfig.autoSleep = true;
                         for (const tok of tokens) {
                             const cleanToken = typeof tok === "string" ? tok.trim() : "";
                             if (!cleanToken)
                                 continue;
+                            // Stagger startup between accounts to prevent simultaneous gateway burst
+                            if (launchedAccounts.length > 0) {
+                                const staggerMs = (3500 + Math.floor(Math.random() * 3000));
+                                logger.info(`[Anti-Ban Jitter] Staggering startup of next account by ${Math.round(staggerMs / 1000)}s...`);
+                                await new Promise(r => setTimeout(r, staggerMs));
+                            }
                             let client = dashboardState.verifiedClients.get(cleanToken);
                             if (!client || !client.isReady()) {
                                 client = new ExtendedClient();
@@ -226,7 +237,7 @@ export class DashboardServer {
                             launchedAccounts.push(client.user.username);
                         }
                         dashboardState.isRunning = true;
-                        dashboardState.sharedConfig = { ...config };
+                        dashboardState.sharedConfig = { ...config, autoQuest: true, autoCrate: true, autoDaily: true, autoSleep: true };
                         dashboardState.broadcastStatus();
                         logger.info(`[Setup] Successfully launched ${launchedAccounts.length} accounts: ${launchedAccounts.join(", ")}`);
                         res.writeHead(200, { "Content-Type": "application/json" });

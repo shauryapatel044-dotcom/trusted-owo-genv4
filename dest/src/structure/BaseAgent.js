@@ -36,8 +36,13 @@ export class BaseAgent {
     gem3Cache;
     starCache;
     channelChangeThreshold = ranInt(17, 56);
-    autoSleepThreshold = ranInt(32, 600);
+    autoSleepThreshold = ranInt(98, 102); // break after ~100 commands
     lastSleepAt = 0;
+    breakUntil = 0;
+    dailyStreak = 0;
+    nextDailyAt = 0;
+    activeQuests = [];
+    jitterOffset = ranInt(1500, 5000);
     captchaDetected = false;
     farmLoopRunning = false;
     farmLoopPaused = false;
@@ -218,6 +223,14 @@ export class BaseAgent {
             logger.debug("Farm loop is paused, skipping this iteration.");
             return;
         }
+        if (this.breakUntil > Date.now()) {
+            const remaining = this.breakUntil - Date.now();
+            logger.debug(`[Break] Account ${this.client.user?.username} is resting, resuming in ${Math.ceil(remaining / 1000)}s...`);
+            setTimeout(() => {
+                this.farmLoop();
+            }, Math.min(remaining + ranInt(1000, 2500), 20000));
+            return;
+        }
         this.farmLoopRunning = true;
         try {
             const featureKeys = Array.from(this.features.keys());
@@ -229,6 +242,10 @@ export class BaseAgent {
                 if (this.captchaDetected) {
                     logger.debug("Captcha detected, skipping feature execution.");
                     return;
+                }
+                if (this.breakUntil > Date.now()) {
+                    logger.debug("Break triggered, pausing current farm iteration.");
+                    break;
                 }
                 const botStatus = await this.isBotOnline();
                 if (!botStatus) {
@@ -249,18 +266,22 @@ export class BaseAgent {
                     if (!shouldRun)
                         continue;
                     const res = await feature.run({ agent: this, t, locale: getCurrentLocale() });
-                    this.cooldownManager.set("feature", feature.name, typeof res === "number" && !isNaN(res) ? res : feature.cooldown() || 30_000);
-                    await this.client.sleep(ranInt(500, 4600));
+                    const baseCooldown = typeof res === "number" && !isNaN(res) ? res : feature.cooldown() || 30_000;
+                    // Anti-ban cooldown jitter (+/- 8% to 15%)
+                    const cdJitter = ranInt(-Math.floor(baseCooldown * 0.08), Math.floor(baseCooldown * 0.12));
+                    this.cooldownManager.set("feature", feature.name, Math.max(baseCooldown + cdJitter, 8_000));
+                    // Anti-ban human delay between commands
+                    await this.client.sleep(ranInt(900, 4800));
                 }
                 catch (error) {
                     logger.error(`Error running feature ${feature.name}:`);
                     logger.error(error);
                 }
             }
-            if (!this.captchaDetected && !this.farmLoopPaused) {
+            if (!this.captchaDetected && !this.farmLoopPaused && this.breakUntil <= Date.now()) {
                 setTimeout(() => {
                     this.farmLoop();
-                }, ranInt(1000, 7500));
+                }, ranInt(1500, 6800));
             }
         }
         catch (error) {
@@ -309,7 +330,10 @@ export class BaseAgent {
         logger.info(t("agent.messages.loggedIn", { username: client.user.username }));
         // Register to Red Dashboard controller
         dashboardState.registerAccount(client, agent, config);
-        agent.farmLoop();
+        // Anti-ban phase stagger offset on startup
+        setTimeout(() => {
+            agent.farmLoop();
+        }, agent.jitterOffset);
         return agent;
     };
 }

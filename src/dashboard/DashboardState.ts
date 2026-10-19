@@ -11,13 +11,16 @@ export interface AccountInfo {
     token: string;
     channelName: string;
     channelId: string;
-    status: "running" | "paused" | "captcha" | "connecting" | "error";
+    status: "running" | "paused" | "captcha" | "connecting" | "error" | "break";
     ping: number;
     totalCommands: number;
     totalCaptchaSolved: number;
     totalCaptchaFailed: number;
     uptime: number;
     startedAt: number;
+    dailyStreak?: number;
+    breakUntil?: number;
+    activeQuests?: string[];
 }
 
 export interface LogEntry {
@@ -82,6 +85,8 @@ export class DashboardState {
             let status: AccountInfo["status"] = "running";
             if (agent.captchaDetected) {
                 status = "captcha";
+            } else if (agent.breakUntil > Date.now()) {
+                status = "break";
             } else if (agent.farmLoopPaused) {
                 status = "paused";
             } else if (!client.isReady()) {
@@ -101,7 +106,10 @@ export class DashboardState {
                 totalCaptchaSolved: agent.totalCaptchaSolved,
                 totalCaptchaFailed: agent.totalCaptchaFailed,
                 uptime: Math.floor((Date.now() - item.startedAt) / 1000),
-                startedAt: item.startedAt
+                startedAt: item.startedAt,
+                dailyStreak: agent.dailyStreak,
+                breakUntil: agent.breakUntil,
+                activeQuests: agent.activeQuests
             });
         }
         return list;

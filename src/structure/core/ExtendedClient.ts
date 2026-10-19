@@ -20,17 +20,24 @@ export class ExtendedClient<Ready extends boolean = boolean> extends Client<Read
         {
             channel,
             prefix = "",
-            typing = ranInt(500, 1000),
+            typing,
             skipLogging = false,
         }: SendMessageOptions
     ) => {
-        await channel.sendTyping()
-        await this.sleep(typing);
+        // Human reaction pause before starting to type
+        await this.sleep(ranInt(250, 600));
+        await channel.sendTyping();
+
+        // Realistic typing duration based on message length and human variance
+        const humanTypingDuration = typing !== undefined
+            ? typing
+            : ranInt(850, 1600) + Math.min(message.length * ranInt(50, 95), 1800);
+        await this.sleep(humanTypingDuration);
 
         const command = message.startsWith(prefix) ? message : `${prefix} ${message}`;
 
         channel.send(command);
-        if (!skipLogging) logger.sent(command)
+        if (!skipLogging) logger.sent(command);
     }
 
     public checkAccount = (token?: string) => {

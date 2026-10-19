@@ -44,6 +44,11 @@ const useGems = async (params: FeatureFnParams, huntMsg: Message) => {
     const rawText = invMsg.content + " " + (invMsg.embeds[0]?.description || "");
     const inventory = rawText.split("`");
 
+    if (agent.config.autoCrate !== false && (inventory.includes("100") || rawText.toLowerCase().includes("crate"))) {
+        await agent.send("crate all");
+        await agent.client.sleep(ranInt(3000, 6000));
+    }
+
     if (agent.config.autoFabledLootbox && inventory.includes("049")) {
         await agent.send("lb fabled");
     }

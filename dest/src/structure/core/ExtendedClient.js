@@ -10,9 +10,15 @@ export class ExtendedClient extends Client {
         this.on("warn", logger.warn);
         this.on("error", logger.error);
     };
-    sendMessage = async (message, { channel, prefix = "", typing = ranInt(500, 1000), skipLogging = false, }) => {
+    sendMessage = async (message, { channel, prefix = "", typing, skipLogging = false, }) => {
+        // Human reaction pause before starting to type
+        await this.sleep(ranInt(250, 600));
         await channel.sendTyping();
-        await this.sleep(typing);
+        // Realistic typing duration based on message length and human variance
+        const humanTypingDuration = typing !== undefined
+            ? typing
+            : ranInt(850, 1600) + Math.min(message.length * ranInt(50, 95), 1800);
+        await this.sleep(humanTypingDuration);
         const command = message.startsWith(prefix) ? message : `${prefix} ${message}`;
         channel.send(command);
         if (!skipLogging)

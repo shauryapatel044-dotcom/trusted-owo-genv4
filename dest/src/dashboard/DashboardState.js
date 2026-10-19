@@ -49,6 +49,9 @@ export class DashboardState {
             if (agent.captchaDetected) {
                 status = "captcha";
             }
+            else if (agent.breakUntil > Date.now()) {
+                status = "break";
+            }
             else if (agent.farmLoopPaused) {
                 status = "paused";
             }
@@ -68,7 +71,10 @@ export class DashboardState {
                 totalCaptchaSolved: agent.totalCaptchaSolved,
                 totalCaptchaFailed: agent.totalCaptchaFailed,
                 uptime: Math.floor((Date.now() - item.startedAt) / 1000),
-                startedAt: item.startedAt
+                startedAt: item.startedAt,
+                dailyStreak: agent.dailyStreak,
+                breakUntil: agent.breakUntil,
+                activeQuests: agent.activeQuests
             });
         }
         return list;

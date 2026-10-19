@@ -53,7 +53,9 @@ export const ConfigSchema = z.object({
     ]).optional(),
     useSpecialGem: z.boolean().default(false).optional(),
     autoLootbox: z.boolean().default(true).optional(),
+    autoCrate: z.boolean().default(true).optional(),
     autoFabledLootbox: z.boolean().default(false).optional(),
+    autoQuest: z.boolean().default(true).optional(),
     autoQuote: z.array(z.enum([
         "owo",
         "quote"
