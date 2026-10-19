@@ -2,6 +2,7 @@ import { Schematic } from "../structure/Schematic.js";
 import { ranInt } from "../utils/math.js";
 import { logger } from "../utils/logger.js";
 import { dashboardState } from "../dashboard/DashboardState.js";
+import { WebhookNotifier } from "../services/notifiers/WebhookNotifier.js";
 export default Schematic.registerFeature({
     name: "autoDaily",
     cooldown: () => {
@@ -30,6 +31,7 @@ export default Schematic.registerFeature({
                 agent.dailyStreak = parseInt(streakMatch[1], 10);
                 logger.info(`📅 [Auto-Daily] ${agent.client.user.username} claimed daily! Current Streak: ${agent.dailyStreak} days 🔥`);
                 dashboardState.broadcastStatus();
+                WebhookNotifier.sendDailyClaimed(agent, agent.dailyStreak).catch(() => { });
             }
             // 2. Cooldown Detection (e.g. "claim your daily in 14 hours and 20 minutes")
             const hoursMatch = rawContent.match(/(\d+)\s*h(?:our)?s?/i);

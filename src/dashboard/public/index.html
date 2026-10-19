@@ -1115,6 +1115,14 @@
                         </div>
                         <label class="switch"><input type="checkbox" id="cfg-autoGem" checked><span class="slider"></span></label>
                     </div>
+
+                    <div class="switch-container" onclick="toggleSwitch('autoEquip')">
+                        <div class="switch-info">
+                            <span class="switch-title">⚔️ Auto-Equip Best Weapons & Team</span>
+                            <span class="switch-desc">Equips highest CP battle team (team auto) & top weapon ID</span>
+                        </div>
+                        <label class="switch"><input type="checkbox" id="cfg-autoEquip" checked><span class="slider"></span></label>
+                    </div>
                 </div>
 
                 <!-- Section: Target Server & Channels -->
@@ -1203,6 +1211,15 @@
                             <option value="stealth">🛡️ Ultra-Stealth Gamer (1400ms - 3200ms)</option>
                         </select>
                         <span style="font-size: 11px; color: var(--text-dim); margin-top: 3px;">Includes human reaction pauses and dynamic character-count typing simulation.</span>
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label">Alt-Tab Human Distraction Pauses:</label>
+                        <select id="cust-humanizeDistraction" class="input-field">
+                            <option value="true" selected>✅ Enabled (20-40s pause every 22-38 cmds)</option>
+                            <option value="false">❌ Disabled (Continuous farm)</option>
+                        </select>
+                        <span style="font-size: 11px; color: var(--text-dim); margin-top: 3px;">Simulates human gamer alt-tabbing or checking Discord DMs.</span>
                     </div>
                 </div>
 
@@ -1293,6 +1310,19 @@
                             <option value="pray">🙏 Pray (/owo pray)</option>
                             <option value="curse">😈 Curse (/owo curse)</option>
                         </select>
+                    </div>
+                </div>
+
+                <!-- Section 6: Auto-Equip & Battle Squad -->
+                <div class="section-header">⚔️ Battle Team Optimization & Weapon Equipper</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 10px; margin-bottom: 20px;">
+                    <div class="input-group">
+                        <label class="input-label">Auto-Equip Strongest Weapons & Squad:</label>
+                        <select id="cust-autoEquip" class="input-field">
+                            <option value="true" selected>✅ Automatically Equip Best Weapons & Team (team auto)</option>
+                            <option value="false">❌ Keep Manual Squad & Weapons</option>
+                        </select>
+                        <span style="font-size: 11px; color: var(--text-dim); margin-top: 3px;">Executes team auto and inspects owo weapon to equip highest-tier weapon ID.</span>
                     </div>
                 </div>
 
@@ -1548,7 +1578,7 @@
 
         // Populate Config Form Inputs
         function populateConfigFields(cfg) {
-            ['autoHuntbot', 'autoBattle', 'autoDaily', 'autoSleep', 'autoQuest', 'autoCrate', 'autoCookie', 'autoClover', 'autoLootbox', 'autoSell', 'autoGem'].forEach(key => {
+            ['autoHuntbot', 'autoBattle', 'autoDaily', 'autoSleep', 'autoQuest', 'autoCrate', 'autoCookie', 'autoClover', 'autoLootbox', 'autoSell', 'autoGem', 'autoEquip'].forEach(key => {
                 const el = document.getElementById('cfg-' + key);
                 if (el && cfg[key] !== undefined) {
                     el.checked = !!cfg[key];
@@ -1574,6 +1604,14 @@
             if (cfg.typingSpeedMode) {
                 const el = document.getElementById('cust-typingSpeedMode');
                 if (el) el.value = cfg.typingSpeedMode;
+            }
+            if (cfg.humanizeDistraction !== undefined) {
+                const el = document.getElementById('cust-humanizeDistraction');
+                if (el) el.value = cfg.humanizeDistraction ? "true" : "false";
+            }
+            if (cfg.autoEquip !== undefined) {
+                const el = document.getElementById('cust-autoEquip');
+                if (el) el.value = cfg.autoEquip ? "true" : "false";
             }
             if (cfg.questCheckInterval !== undefined) {
                 const el = document.getElementById('cust-questCheckInterval');
@@ -1707,6 +1745,8 @@
                     autoLootbox: document.getElementById('cfg-autoLootbox')?.checked ?? true,
                     autoSell: document.getElementById('cfg-autoSell')?.checked ?? false,
                     autoGem: document.getElementById('cfg-autoGem')?.checked ? 1 : 0,
+                    autoEquip: document.getElementById('cust-autoEquip')?.value !== 'false' && (document.getElementById('cfg-autoEquip')?.checked ?? true),
+                    humanizeDistraction: document.getElementById('cust-humanizeDistraction')?.value !== 'false',
                     gemTier: ['common', 'uncommon', 'rare', 'epic', 'mythical', 'legendary', 'fabled'],
                     sleepCommandsThreshold: parseInt(document.getElementById('cust-sleepCommandsThreshold')?.value || '100', 10),
                     sleepDurationMinutes: parseInt(document.getElementById('cust-sleepDurationMinutes')?.value || '10', 10),
@@ -1774,6 +1814,7 @@
                 autoLootbox: document.getElementById('cfg-autoLootbox')?.checked,
                 autoSell: document.getElementById('cfg-autoSell')?.checked,
                 autoGem: document.getElementById('cfg-autoGem')?.checked ? 1 : 0,
+                autoEquip: document.getElementById('cfg-autoEquip')?.checked ?? true,
                 gemTier: ['common', 'uncommon', 'rare', 'epic', 'mythical', 'legendary', 'fabled'],
                 adminID: adminID || undefined,
                 captchaAPI: (captchaAPI && apiKey) ? captchaAPI : undefined,
@@ -1814,6 +1855,8 @@
                 gemTier: tiers.length > 0 ? tiers : ['common', 'uncommon', 'rare', 'epic', 'mythical', 'legendary', 'fabled'],
                 autoTrait: document.getElementById('cust-autoTrait')?.value || 'efficiency',
                 autoPray: [document.getElementById('cust-autoPray')?.value || 'pray'],
+                autoEquip: document.getElementById('cust-autoEquip')?.value !== 'false',
+                humanizeDistraction: document.getElementById('cust-humanizeDistraction')?.value !== 'false',
             };
 
             try {

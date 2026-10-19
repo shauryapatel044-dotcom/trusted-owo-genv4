@@ -9,6 +9,7 @@ export class DashboardState {
     sseClients = new Set();
     sharedConfig = {};
     startTime = Date.now();
+    activeTypingChannels = new Set();
     constructor() {
         logger.addListener((entry) => {
             const logEntry = {

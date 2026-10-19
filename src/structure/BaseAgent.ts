@@ -60,6 +60,8 @@ export class BaseAgent {
 
     public channelChangeThreshold = ranInt(17, 56);
     public autoSleepThreshold = ranInt(98, 102); // break after ~100 commands
+    public nextDistractionAt = ranInt(22, 38); // Alt-tab distraction pause every 22-38 cmds
+    public distractionCounter = 0;
     public lastSleepAt = 0;
     public breakUntil = 0;
     public dailyStreak = 0;
@@ -346,6 +348,18 @@ export class BaseAgent {
 
                     // Anti-ban human delay between commands
                     await this.client.sleep(ranInt(900, 4800));
+
+                    // Natural human alt-tab distraction pause (every 22-38 commands)
+                    if (this.config.humanizeDistraction !== false) {
+                        this.distractionCounter++;
+                        if (this.distractionCounter >= this.nextDistractionAt) {
+                            this.distractionCounter = 0;
+                            this.nextDistractionAt = ranInt(22, 38);
+                            const pauseSec = ranInt(18, 42);
+                            logger.info(`☕ [Humanize] Account ${this.client.user?.username} taking an alt-tab distraction pause (${pauseSec}s)...`);
+                            await this.client.sleep(pauseSec * 1000);
+                        }
+                    }
                 } catch (error) {
                     logger.error(`Error running feature ${feature.name}:`);
                     logger.error(error as Error);

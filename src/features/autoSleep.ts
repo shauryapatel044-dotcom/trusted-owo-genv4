@@ -3,6 +3,7 @@ import { formatTime } from "@/utils/time.js";
 import { logger } from "@/utils/logger.js";
 import { ranInt } from "@/utils/math.js";
 import { dashboardState } from "@/dashboard/DashboardState.js";
+import { WebhookNotifier } from "@/services/notifiers/WebhookNotifier.js";
 
 export default Schematic.registerFeature({
     name: "autoSleep",
@@ -34,12 +35,20 @@ export default Schematic.registerFeature({
         logger.info(`☕ [Rest Break] Account ${agent.client.user?.username} completed ${commandsSinceLastSleep} commands! Taking a ${breakMinutes}-minute break for human stealth.`);
         logger.info(`⏳ [Rest Break] Account ${agent.client.user?.username} will resume 24/7 farming at ${resumeTimeStr} (Next break after ~${nextThreshold} commands).`);
 
+        // Discord Presence Cycling: Go Idle during break (realistic human AFK)
+        try { agent.client.user?.setStatus("idle"); } catch {}
+
         dashboardState.broadcastStatus();
+        WebhookNotifier.sendBreakNotice(agent, commandsSinceLastSleep, resumeTimeStr).catch(() => {});
 
         await agent.client.sleep(sleepTime);
 
+        // Discord Presence Cycling: Return to Online after break
+        try { agent.client.user?.setStatus("online"); } catch {}
+
         agent.breakUntil = 0;
         dashboardState.broadcastStatus();
+        WebhookNotifier.sendBreakResume(agent).catch(() => {});
 
         logger.info(`⚡ [Rest Break] Account ${agent.client.user?.username} finished break! Resuming 24/7 farming loop immediately.`);
 

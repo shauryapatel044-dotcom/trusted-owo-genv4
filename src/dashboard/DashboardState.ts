@@ -42,6 +42,7 @@ export class DashboardState {
     public sseClients: Set<http.ServerResponse> = new Set();
     public sharedConfig: Partial<Configuration> = {};
     public startTime = Date.now();
+    public activeTypingChannels: Set<string> = new Set();
 
     private constructor() {
         logger.addListener((entry) => {
