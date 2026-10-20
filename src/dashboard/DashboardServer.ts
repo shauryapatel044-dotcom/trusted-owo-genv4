@@ -243,32 +243,46 @@ export class DashboardServer {
                             const cleanToken = typeof tok === "string" ? tok.trim() : "";
                             if (!cleanToken) continue;
 
-                            // Stagger startup between accounts to prevent simultaneous gateway burst
-                            if (launchedAccounts.length > 0) {
-                                const staggerMs = (3500 + Math.floor(Math.random() * 3000));
-                                logger.info(`[Anti-Ban Jitter] Staggering startup of next account by ${Math.round(staggerMs / 1000)}s...`);
-                                await new Promise(r => setTimeout(r, staggerMs));
+                            try {
+                                // Stagger startup between accounts to prevent simultaneous gateway burst
+                                if (launchedAccounts.length > 0) {
+                                    const staggerMs = (3500 + Math.floor(Math.random() * 3000));
+                                    logger.info(`[Anti-Ban Jitter] Staggering startup of next account by ${Math.round(staggerMs / 1000)}s...`);
+                                    await new Promise(r => setTimeout(r, staggerMs));
+                                }
+
+                                let client = dashboardState.verifiedClients.get(cleanToken);
+                                if (!client || !client.isReady()) {
+                                    client = new ExtendedClient();
+                                    await client.checkAccount(cleanToken);
+                                    dashboardState.verifiedClients.set(cleanToken, client);
+                                }
+
+                                const accConfig = {
+                                    ...sanitizedConfig,
+                                    token: cleanToken,
+                                    username: client.user.username,
+                                } as Configuration;
+
+                                // Save to ConfigManager for persistent reload
+                                this.configManager.set(client.user.id, accConfig);
+
+                                // Initialize agent & register to dashboard
+                                await BaseAgent.initialize(client, accConfig);
+                                launchedAccounts.push(client.user.username);
+                            } catch (tokErr: any) {
+                                const errMsg = tokErr?.message || String(tokErr);
+                                const is401 = tokErr?.status === 401 || errMsg.includes("401") || errMsg.includes("Unauthorized");
+                                if (is401) {
+                                    logger.error(`❌ [Account Login Failed] Token (${cleanToken.slice(0, 12)}...) is EXPIRED or INVALID (401: Unauthorized). Please generate a new Discord token!`);
+                                } else {
+                                    logger.error(`❌ [Account Login Failed] Token (${cleanToken.slice(0, 12)}...): ${errMsg}`);
+                                }
                             }
+                        }
 
-                            let client = dashboardState.verifiedClients.get(cleanToken);
-                            if (!client || !client.isReady()) {
-                                client = new ExtendedClient();
-                                await client.checkAccount(cleanToken);
-                                dashboardState.verifiedClients.set(cleanToken, client);
-                            }
-
-                            const accConfig = {
-                                ...sanitizedConfig,
-                                token: cleanToken,
-                                username: client.user.username,
-                            } as Configuration;
-
-                            // Save to ConfigManager for persistent reload
-                            this.configManager.set(client.user.id, accConfig);
-
-                            // Initialize agent & register to dashboard
-                            await BaseAgent.initialize(client, accConfig);
-                            launchedAccounts.push(client.user.username);
+                        if (launchedAccounts.length === 0) {
+                            throw new Error("No accounts could be launched. All provided Discord tokens failed or returned 401: Unauthorized. Please check your tokens in Discord!");
                         }
 
                         dashboardState.isRunning = true;

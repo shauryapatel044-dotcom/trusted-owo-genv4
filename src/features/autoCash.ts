@@ -10,6 +10,7 @@ export default Schematic.registerFeature({
         return Boolean(config.autoCash ?? true);
     },
     run: async ({ agent }) => {
+        try {
         const cashMsg = await agent.awaitResponse({
             trigger: () => agent.send("cash"),
             filter: (m) => m.author.id === agent.owoID
@@ -44,5 +45,9 @@ export default Schematic.registerFeature({
         }
 
         return ranInt(8 * 60 * 1000, 15 * 60 * 1000);
+        } catch (err) {
+            logger.debug(`[autoCash] Skipped: ${err}`);
+            return ranInt(8 * 60 * 1000, 15 * 60 * 1000);
+        }
     }
 });

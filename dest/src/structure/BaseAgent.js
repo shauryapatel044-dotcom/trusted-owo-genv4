@@ -168,7 +168,7 @@ export class BaseAgent {
             if (!this.activeChannel)
                 return false;
             const owo = await this.activeChannel.guild.members.fetch(this.owoID).catch(() => null);
-            return !!owo && owo.presence?.status !== "offline";
+            return !!owo;
         }
         catch (error) {
             logger.warn(t("agent.messages.owoStatusCheckFailed"));
@@ -201,7 +201,8 @@ export class BaseAgent {
                         logger.debug(`No response received within the specified time (${this.invalidResponseCount}/${this.invalidResponseThreshold}).`);
                     }
                     if (this.invalidResponseCount >= this.invalidResponseThreshold) {
-                        reject(new Error("Invalid response count exceeded threshold."));
+                        logger.warn(`[awaitResponse] Consecutive commands without response exceeded threshold (${this.invalidResponseCount}). Resetting.`);
+                        this.invalidResponseCount = 0;
                     }
                     resolve(undefined);
                 }
