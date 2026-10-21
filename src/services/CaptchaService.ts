@@ -12,6 +12,7 @@ import os from "node:os";
 import { Message, MessageActionRow, MessageButton } from "discord.js-selfbot-v13";
 import { NORMALIZE_REGEX } from "@/typings/constants.js";
 import { NotificationService } from "./NotificationService.js";
+import { dashboardState } from "@/dashboard/DashboardState.js";
 
 interface CaptchaServiceOptions {
     provider?: Configuration["captchaAPI"];
@@ -211,7 +212,11 @@ export class CaptchaService {
             const attachmentUrl = message.attachments.first()?.url;
             if (attachmentUrl) {
                 logger.debug(`Image captcha detected, attempting to solve... (Attempt ${retries + 1}/${maxRetries + 1})`);
-                const solution = await captchaService.solveImageCaptcha(attachmentUrl);
+                // Extract question text if OwO included a question in the message
+                const cleanText = normalizedContent.replace(/<@!?\d+>/g, "").replace(/[*_`]/g, "").trim();
+                const questionMatch = cleanText.match(/(?:which|what|how many|select|choose|find|where|count|type)[^?.\n]*[?.\n]?/i);
+                const question = questionMatch ? questionMatch[0] : (cleanText.length > 5 ? cleanText : undefined);
+                const solution = await captchaService.solveImageCaptcha(attachmentUrl, { question });
 
                 logger.debug(`Attempting reach OwO bot...`);
                 const owo = await agent.client.users.fetch(agent.owoID);
@@ -231,15 +236,29 @@ export class CaptchaService {
                 }
             } else if (
                 /(https?:\/\/[^\s]+)/g.test(normalizedContent)
+                || /owobot\.com\/captcha/i.test(normalizedContent)
                 || (
                     message.components.length > 0 && message.components[0].type == "ACTION_ROW"
                     && (message.components[0] as MessageActionRow).components[0].type == "BUTTON"
                     && /(https?:\/\/[^\s]+)/g.test(((message.components[0] as MessageActionRow).components[0] as MessageButton).url || "")
                 )
             ) {
-                logger.debug(`Link captcha detected, attempting to solve... (Attempt ${retries + 1}/${maxRetries + 1})`);
-                const { location } = await agent.client.authorizeURL("https://discord.com/oauth2/authorize?response_type=code&redirect_uri=https%3A%2F%2Fowobot.com%2Fapi%2Fauth%2Fdiscord%2Fredirect&scope=identify%20guilds%20email%20guilds.members.read&client_id=408785106942164992")
-                await captchaService.solveHcaptcha(location);
+                logger.alert(`🔗 [Link Captcha / Warning] OwO verification link detected for ${agent.client.user?.username}. Pausing this account.`);
+                agent.farmLoopPaused = true;
+                agent.farmLoopRunning = false;
+                agent.captchaDetected = true;
+                dashboardState.broadcastStatus();
+
+                try {
+                    logger.info(`🌐 Authorizing OAuth2 on owobot.com for ${agent.client.user?.username}...`);
+                    const { location } = await agent.client.authorizeURL("https://discord.com/oauth2/authorize?response_type=code&redirect_uri=https%3A%2F%2Fowobot.com%2Fapi%2Fauth%2Fdiscord%2Fredirect&scope=identify%20guilds%20email%20guilds.members.read&client_id=408785106942164992");
+                    logger.info(`✅ Account successfully authorized on OwO website!`);
+                    await captchaService.solveHcaptcha(location);
+                } catch (webErr: any) {
+                    logger.warn(`⚠️ [Captcha Notice] Automated web solve notice: ${webErr?.message || webErr}`);
+                    logger.info(`👉 Complete verification at https://owobot.com/captcha for ${agent.client.user?.username}. This worker will stay safely paused to prevent bans.`);
+                    throw webErr;
+                }
             }
 
             // If we reach here, captcha was solved successfully

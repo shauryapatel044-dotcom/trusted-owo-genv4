@@ -32,16 +32,6 @@ export default Schematic.registerFeature({
                 logger.info(`📅 [Auto-Daily] ${agent.client.user.username} claimed daily! Current Streak: ${agent.dailyStreak} days 🔥`);
                 dashboardState.broadcastStatus();
                 WebhookNotifier.sendDailyClaimed(agent, agent.dailyStreak).catch(() => { });
-                // Capture balance if included in daily claim response
-                const cleanDaily = rawContent.replace(/[*_`]/g, "").replace(/<a?:[a-zA-Z0-9_]+:\d+>/g, " ");
-                const balMatch = cleanDaily.match(/(?:you\s+(?:currently\s+|now\s+)?have|balance\s*:?|cowoncy\s*:?)\s*([0-9,]+)/i);
-                if (balMatch) {
-                    const bal = parseInt(balMatch[1].replace(/,/g, ""), 10);
-                    if (!isNaN(bal) && bal >= 0) {
-                        agent.cowoncy = bal;
-                        dashboardState.broadcastStatus();
-                    }
-                }
             }
             // 2. Cooldown Detection (e.g. "claim your daily in 14 hours and 20 minutes")
             const hoursMatch = rawContent.match(/(\d+)\s*h(?:our)?s?/i);

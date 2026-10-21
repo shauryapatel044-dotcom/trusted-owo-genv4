@@ -527,8 +527,14 @@ export class BaseAgent {
 
             if (cashMsg) {
                 const embedContent = (cashMsg.embeds || []).map(e => `${e.title || ""} ${e.description || ""} ${e.fields?.map(f => `${f.name} ${f.value}`).join(" ") || ""}`).join(" ");
-                const clean = (cashMsg.content + " " + embedContent).replace(/[*_`]/g, "").replace(/<a?:[a-zA-Z0-9_]+:\d+>/g, " ");
-                const match = clean.match(/(?:you\s+(?:currently\s+|now\s+)?have|balance\s*:?|cowoncy\s*:?)\s*([0-9,]+)/i);
+                                const clean = (cashMsg.content + " " + embedContent)
+                    .replace(/<a?:cowoncy:\d+>/gi, " cowoncy ")
+                    .replace(/[*_`]/g, "")
+                    .replace(/<a?:[a-zA-Z0-9_]+:\d+>/g, " ");
+                const m1 = clean.match(/([0-9,]+)\s*cowoncy/i);
+                const m2 = clean.match(/(?:balance|cowoncy)\s*:?\s*([0-9,]+)/i);
+                const m3 = clean.match(/(?:you\s+(?:currently\s+|now\s+)?have)\s*([0-9,]+)/i);
+                const match = m1 || m2 || m3;
                 if (match) {
                     const amount = parseInt(match[1].replace(/,/g, ""), 10);
                     if (!isNaN(amount) && amount >= 0) {

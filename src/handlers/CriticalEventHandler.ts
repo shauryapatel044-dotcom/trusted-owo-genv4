@@ -48,9 +48,7 @@ export class CriticalEventHandler {
             color: "#EF4444"
         }).catch(() => {});
 
-        if (dashboardState.accounts.size <= 1) {
-            process.exit(-1);
-        }
+        // Isolated worker pause: do not terminate entire panel process
     }
 
     public static async handleNoMoney(params: FeatureFnParams) {

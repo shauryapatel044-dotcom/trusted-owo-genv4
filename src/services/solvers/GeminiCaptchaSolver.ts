@@ -4,10 +4,9 @@ import axios from "axios";
 
 export class GeminiCaptchaSolver implements CaptchaSolver {
     private apiKey: string;
-    // Default to gemini-3.5-flash-lite: lowest latency, cheapest Google multimodal vision model
     private model: string;
 
-    constructor(apiKey: string, model: string = "gemini-3.5-flash-lite") {
+    constructor(apiKey: string, model: string = "gemini-2.5-flash") {
         this.apiKey = apiKey.trim();
         this.model = model;
     }
@@ -15,22 +14,34 @@ export class GeminiCaptchaSolver implements CaptchaSolver {
     public solveImage = async (imageData: Buffer, options?: SolveImageOptions): Promise<string> => {
         const base64Data = imageData.toString("base64");
 
-        // Flash-tier models in order of priority: 3.5-flash-lite -> flash-lite-latest -> 2.5-flash
         const candidateModels = [
             this.model,
             "gemini-flash-lite-latest",
-            "gemini-2.5-flash"
+            "gemini-2.5-flash",
+            "gemini-3.5-flash-lite"
         ];
+        const uniqueModels = [...new Set(candidateModels)];
 
         const expectedLen = options?.expectedLength;
+        const hasQuestion = Boolean(options?.question && options.question.trim().length > 0);
 
-        const mainPrompt = expectedLen
+        const mainPrompt = hasQuestion
+            ? `You are an expert AI vision assistant solving a Discord puzzle or verification challenge.
+Challenge Question / Instructions: "${options!.question}"
+Carefully examine the image to answer the question accurately (for example: identifying an animal, object, position, direction, count, or character).
+Output ONLY the direct, concise answer without extra explanations, full sentences, quotes, markdown formatting, or punctuation.`
+            : expectedLen
             ? `You are an expert OCR engine solving a distorted captcha.\nCRITICAL: This captcha contains EXACTLY ${expectedLen} alphanumeric characters (letters and/or digits).\nCarefully examine the characters from left to right. Do NOT mistake background noise, specks, or border lines for characters.\nOutput ONLY the exact ${expectedLen} characters without spaces, punctuation, quotes, or markdown. Maintain original letter casing.`
-            : `You are an expert OCR engine solving a distorted captcha. Read the characters (letters and/or digits) in this image.\nOutput ONLY the exact characters without spaces, punctuation, quotes, or markdown. Maintain original letter casing.`;
+            : `You are an expert AI vision engine solving a captcha or verification challenge.
+1. If this image contains or asks a question (such as "Which animal...", "Select...", "Count...", or "Find..."):
+   Understand the question and output ONLY the direct, concise answer to that question.
+2. If this is a distorted text/letter captcha:
+   Read all the characters (letters and/or digits) accurately from left to right. Maintain original casing.
+Output ONLY the final answer without pleasantries, explanations, markdown, or punctuation.`;
 
         let lastError: any = null;
 
-        for (const model of candidateModels) {
+        for (const model of uniqueModels) {
             try {
                 const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(this.apiKey)}`;
 
@@ -53,7 +64,7 @@ export class GeminiCaptchaSolver implements CaptchaSolver {
                         ],
                         generationConfig: {
                             temperature: 0.0,
-                            maxOutputTokens: 20
+                            maxOutputTokens: hasQuestion ? 50 : 20
                         }
                     },
                     {
@@ -69,9 +80,14 @@ export class GeminiCaptchaSolver implements CaptchaSolver {
                 const textPart = candidate?.content?.parts?.find((p: any) => p.text)?.text;
 
                 if (textPart && typeof textPart === "string") {
+                    if (hasQuestion) {
+                        let cleanAnswer = textPart.trim().replace(/[\r\n\t]/g, " ").replace(/^["'`]+|["'`]+$/g, "").trim();
+                        logger.info(`🤖 [Gemini Vision AI] Visual question solved via ${model}: "${cleanAnswer}"`);
+                        return cleanAnswer;
+                    }
+
                     let cleaned = textPart.trim().replace(/[\r\n\t]/g, "").replace(/[^a-zA-Z0-9]/g, "");
 
-                    // If expected length was specified but Gemini returned extra characters due to noise
                     if (expectedLen && cleaned.length > expectedLen) {
                         try {
                             const correctionResponse = await axios.post(
@@ -119,7 +135,6 @@ export class GeminiCaptchaSolver implements CaptchaSolver {
                             // Fallback to slicing if correction pass times out
                         }
 
-                        // Slice to expectedLen if still longer
                         const sliced = cleaned.slice(0, expectedLen);
                         logger.warn(`🤖 [Gemini Vision AI] Adjusted ${cleaned} to expected ${expectedLen} characters: "${sliced}"`);
                         return sliced;
@@ -142,6 +157,6 @@ export class GeminiCaptchaSolver implements CaptchaSolver {
     };
 
     public solveHcaptcha = async (_sitekey: string, _siteurl: string): Promise<string> => {
-        throw new Error("Gemini AI is a Vision OCR engine for Discord image captchas. For website hCaptcha link redirects, please use 2Captcha or YesCaptcha, or complete the link in your browser.");
+        throw new Error("hCaptcha on owobot.com requires web interactive token solving. If using Gemini AI, complete the verification link once in your browser or configure a 2Captcha/YesCaptcha solver key.");
     };
 }

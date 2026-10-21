@@ -19,6 +19,7 @@ export interface SolveImageOptions {
     minLength?: number;
     maxLength?: number;
     context?: string;
+    question?: string;
 }
 
 export interface CaptchaSolver {

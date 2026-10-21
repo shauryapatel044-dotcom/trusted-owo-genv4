@@ -40,9 +40,7 @@ export class CriticalEventHandler {
             description: `This account was marked banned by OwO bot and has been safely isolated. All other active accounts continue farming normally.`,
             color: "#EF4444"
         }).catch(() => { });
-        if (dashboardState.accounts.size <= 1) {
-            process.exit(-1);
-        }
+        // Isolated worker pause: do not terminate entire panel process
     }
     static async handleNoMoney(params) {
         const { agent, t } = params;

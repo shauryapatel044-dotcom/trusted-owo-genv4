@@ -24,26 +24,50 @@ export default Schematic.registerEvent({
 
         if (!isForThisUser) return;
 
-        // 1. Check for Captcha
-        if (/are you a real human|(check|verify) that you are.{1,3}human!/img.test(normalizedContent)) {
+        // 1. Comprehensive Check for Captchas, Verification Warnings, and Links
+        const isCaptchaOrWarning =
+            /are you a real human/i.test(normalizedContent) ||
+            /(?:check|verify) that you are.{1,3}human/i.test(normalizedContent) ||
+            /complete (?:this|the|your) captcha/i.test(normalizedContent) ||
+            /warning has been issued/i.test(normalizedContent) ||
+            /owobot\.com\/captcha/i.test(normalizedContent) ||
+            (message.embeds || []).some(e => /captcha|warning|verify/i.test((e.title || "") + " " + (e.description || ""))) ||
+            (message.components || []).some(row =>
+                (row as any).components?.some((btn: any) =>
+                    btn.url && (/owobot\.com/i.test(btn.url) || /408785106942164992/.test(btn.url))
+                )
+            );
+
+        if (isCaptchaOrWarning) {
             const chName = (message.channel.type === "DM" ? message.channel.recipient?.displayName : message.channel.name) || "DM/Channel";
-            logger.alert(`Captcha detected in channel: ${chName}!`);
+            logger.alert(`🚨 Captcha or Ban Warning detected for account ${agent.client.user?.username} in ${chName}!`);
+            
+            // Immediately halt this specific account to protect it
             agent.captchaDetected = true;
+            agent.farmLoopPaused = true;
+            agent.farmLoopRunning = false;
+            dashboardState.broadcastStatus();
+
             WebhookNotifier.sendCaptchaAlert(agent, chName).catch(() => {});
             return CaptchaService.handleCaptcha({ agent, t, locale }, message);
         }
 
-        // 2. Check for Captcha Success
+        // 2. Check for Captcha Success / Resolution
         if (/verified that you are.{1,3}human!/igm.test(normalizedContent)) {
-            logger.info(`CAPTCHA HAS BEEN RESOLVED, ${agent.config.autoResume ? "RESTARTING SELFBOT" : "STOPPING SELFBOT"}...`)
+            logger.info(`✅ CAPTCHA RESOLVED for ${agent.client.user?.username}! Resuming farming loop...`);
             WebhookNotifier.sendCaptchaResolved(agent).catch(() => {});
-            if (!agent.config.autoResume) process.exit(0)
-            agent.captchaDetected = false
-            agent.farmLoop()
+            agent.captchaDetected = false;
+            agent.farmLoopPaused = false;
+            agent.farmLoop();
+            dashboardState.broadcastStatus();
         }
 
-        // 3. Check for Ban
-        if (/have been banned/.test(normalizedContent)) {
+        // 3. Check for Ban / Suspension
+        if (/have been banned|have been suspended/i.test(normalizedContent)) {
+            agent.captchaDetected = true;
+            agent.farmLoopPaused = true;
+            agent.farmLoopRunning = false;
+            dashboardState.broadcastStatus();
             return CriticalEventHandler.handleBan(params);
         }
 
@@ -58,36 +82,5 @@ export default Schematic.registerEvent({
                 WebhookNotifier.sendRareCatch(agent, normalizedContent).catch(() => {});
             }
         }
-
-        // 6. Track Cowoncy Balance dynamically
-        const embedContent = (message.embeds || []).map(e => `${e.title || ""} ${e.description || ""} ${e.fields?.map(f => `${f.name} ${f.value}`).join(" ") || ""}`).join(" ");
-        const cleanAll = (normalizedContent + " " + embedContent).replace(/[*_`]/g, "").replace(/<a?:[a-zA-Z0-9_]+:\d+>/g, " ");
-
-        // Check for spending (e.g. "YOU SPENT 120 cowoncy", "you sent 500 cowoncy")
-        const spentMatch = cleanAll.match(/(?:you\s+spent|spent)\s+([0-9,]+)\s*(?:cowoncy|<:cowoncy:\d+>)?/i);
-        if (spentMatch) {
-            const spent = parseInt(spentMatch[1].replace(/,/g, ""), 10);
-            if (!isNaN(spent) && spent > 0 && agent.cowoncy >= spent) {
-                agent.cowoncy -= spent;
-                logger.info(`💸 [Balance Sync] ${agent.client.user?.username} spent ${spent.toLocaleString()} Cowoncy (Remaining: ${agent.cowoncy.toLocaleString()})`);
-                dashboardState.broadcastStatus();
-            }
-        }
-
-        // Check for true balance updates (do not match negative/spending messages)
-        const isNotBalance = /don'?t\s+have|do\s+not\s+have/i.test(cleanAll);
-        if (!isNotBalance) {
-            const m1 = cleanAll.match(/(?:you\s+(?:currently\s+|now\s+)?have|balance\s*:?|cowoncy\s*:?)\s*([0-9,]+)/i);
-            if (m1) {
-                const parsedAmount = parseInt(m1[1].replace(/,/g, ""), 10);
-                if (!isNaN(parsedAmount) && parsedAmount >= 0) {
-                    if (agent.cowoncy !== parsedAmount) {
-                        logger.info(`💰 [Balance Sync] ${agent.client.user?.username} balance updated: ${parsedAmount.toLocaleString()} Cowoncy`);
-                    }
-                    agent.cowoncy = parsedAmount;
-                    dashboardState.broadcastStatus();
-                }
-            }
-        }
     }
-})
+});

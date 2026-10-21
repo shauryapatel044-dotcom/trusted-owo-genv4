@@ -129,26 +129,30 @@ export default Schematic.registerFeature({
     cooldown: () => ranInt(15_000, 22_000),
     condition: async () => true,
     run: async ({ agent, t, locale }) => {
-        const huntMsg = await agent.awaitResponse({
-            trigger: () => agent.send("hunt"),
-            filter: (m) => m.author.id === agent.owoID
-                && m.content.includes(m.guild?.members.me?.displayName!)
-                && /hunt is empowered by|spent 5 .+ and caught a/.test(m.content),
-            expectResponse: true,
-        });
+        try {
+            const huntMsg = await agent.awaitResponse({
+                trigger: () => agent.send("hunt"),
+                filter: (m) => m.author.id === agent.owoID
+                    && m.content.includes(m.guild?.members.me?.displayName!)
+                    && /hunt is empowered by|spent 5 .+ and caught a/.test(m.content),
+                expectResponse: true,
+            });
 
-        if (!huntMsg || !agent.config.autoGem) return;
+            if (!huntMsg || !agent.config.autoGem) return;
 
-        const cooldown = (agent as any).emptyGemCooldown || 0;
-        if (Date.now() < cooldown) return;
+            const cooldown = (agent as any).emptyGemCooldown || 0;
+            if (Date.now() < cooldown) return;
 
-        const gem1Needed = !huntMsg.content.includes("gem1");
-        const gem2Needed = !huntMsg.content.includes("gem3");
-        const gem3Needed = !huntMsg.content.includes("gem4");
-        const starNeeded = Boolean(agent.config.useSpecialGem && !huntMsg.content.includes("star"));
+            const gem1Needed = !huntMsg.content.includes("gem1");
+            const gem2Needed = !huntMsg.content.includes("gem3");
+            const gem3Needed = !huntMsg.content.includes("gem4");
+            const starNeeded = Boolean(agent.config.useSpecialGem && !huntMsg.content.includes("star"));
 
-        if (gem1Needed || gem2Needed || gem3Needed || starNeeded) {
-            await useGems({ agent, t, locale }, huntMsg);
+            if (gem1Needed || gem2Needed || gem3Needed || starNeeded) {
+                await useGems({ agent, t, locale }, huntMsg);
+            }
+        } catch (err) {
+            logger.debug(`[autoHunt] Execution error: ${err}`);
         }
     }
-})
+});
